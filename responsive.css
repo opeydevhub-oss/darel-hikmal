@@ -1,0 +1,268 @@
+/* DAREL HIKMAH INTERNATIONAL ACADEMY
+   Responsive stylesheet: mobile-first breakpoint overrides.
+
+   Breakpoints used:
+   320px  - base styles in style.css (small phones)
+   400px  - large phones (e.g. 430px wide phones)
+   600px  - small tablets / large phones in landscape
+   768px  - tablets
+   1024px - smaller laptops
+   1280px - desktop
+   1440px - large desktop
+
+   Everything below is written mobile-first, so each block only adds
+   layout as the screen gets wider. */
+
+/* ---------- 400px and up: larger phones ---------- */
+@media (min-width: 400px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .facts__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .btn-row .btn { flex: 1 1 auto; }
+}
+
+/* ---------- 600px and up ---------- */
+@media (min-width: 600px) {
+  .section { padding: 3.75rem 0; }
+
+  .grid--two,
+  .grid--three,
+  .grid--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .contact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .value-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .form-card { padding: 2rem; }
+
+  .photo--wide { aspect-ratio: 2 / 1; }
+}
+
+/* ---------- 768px and up: tablets ---------- */
+@media (min-width: 768px) {
+  body { font-size: 1.03rem; }
+
+  .section { padding: 4.25rem 0; }
+
+  .hero,
+  .page-hero { padding: 3rem 0 3.25rem; }
+
+  .hero__inner {
+    display: flex;
+    align-items: center;
+    min-height: 440px;
+  }
+
+  .grid--three,
+  .grid--four { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .grid--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .facts__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .cta-band__inner { text-align: left; justify-items: start; }
+
+  .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .footer-bottom {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .mission { padding: 2.25rem; }
+
+  .stage-rail__list { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .site-nav__list { border-top: 0; }
+
+  .split--form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- 1024px and up: smaller laptops ---------- */
+@media (min-width: 1024px) {
+  .grid--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .hero__inner {
+    min-height: 520px;
+  }
+
+  .hero__text {
+    max-width: 40rem;
+  }
+
+  .split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3rem;
+  }
+
+  .split--wide-text {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+
+  .split--photo-first .split__media { order: -1; }
+
+  .split--form {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .people { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .value-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .contact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .portal-tabs { gap: 0.75rem; }
+
+  .footer-grid { grid-template-columns: 1.4fr 1fr 1.2fr; gap: 2.5rem; }
+}
+
+/* ---------- 1100px and up: full desktop navigation ---------- */
+@media (min-width: 1100px) {
+  .container {
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+  }
+
+  .nav-toggle { display: none; }
+
+  .site-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    width: auto;
+    padding-bottom: 0;
+  }
+
+  .site-nav__list {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .site-nav__list a {
+    padding: 0.62rem 0.6rem;
+    border-bottom: 0;
+    font-size: 0.95rem;
+    border-radius: var(--radius);
+  }
+
+  .site-nav__list a:hover {
+    background: var(--navy-050);
+  }
+
+  .site-nav__list a[aria-current="page"] {
+    box-shadow: none;
+    padding-left: 0.6rem;
+    background: var(--navy-050);
+    border-bottom: 2px solid var(--red-600);
+  }
+
+  .site-nav__cta { margin-top: 0; }
+
+  .site-nav__cta .btn { min-height: 44px; padding: 0.6rem 1rem; font-size: 0.9rem; }
+
+  .navbar__inner { padding-top: 0.85rem; padding-bottom: 0.85rem; }
+}
+
+/* ---------- 1280px and up: desktop ---------- */
+@media (min-width: 1280px) {
+  :root { --container: 1180px; }
+
+  .section { padding: 4.75rem 0; }
+
+  .brand__name { font-size: 1.2rem; }
+
+  .brand__name--full { font-size: 1.02rem; }
+
+  .brand__logo { width: 62px; height: 62px; }
+
+  .hero { padding: 3.5rem 0 3.75rem; }
+
+  .hero__inner {
+    min-height: 560px;
+  }
+
+  .photo--wide { aspect-ratio: 16 / 9; }
+}
+
+/* ---------- 1440px and up: large desktop ---------- */
+@media (min-width: 1440px) {
+  :root { --container: 1240px; }
+
+  body { font-size: 1.05rem; }
+
+  .site-nav { gap: 1.75rem; }
+
+  .site-nav__list { gap: 0.6rem; }
+
+  .site-nav__list a { font-size: 1rem; }
+
+  .section { padding: 5.25rem 0; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Floating motifs switch off completely rather than sitting mid-drift. */
+  .float,
+  .skeleton {
+    animation: none !important;
+  }
+}
+
+/* ---------- Very small screens (320px) ---------- */
+/* The sliding navigation indicator only makes sense on the desktop bar. */
+@media (max-width: 1099px) {
+  .nav-indicator { display: none; }
+}
+
+@media (max-width: 359px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .brand__logo { width: 46px; height: 46px; }
+
+  .brand__name { font-size: 0.98rem; }
+
+  .brand__name--full { font-size: 0.85rem; }
+
+  .brand__motto { letter-spacing: 0.02em; }
+
+  .btn { font-size: 0.94rem; padding: 0.7rem 1rem; }
+
+  .section { padding: 2.5rem 0; }
+
+  .card,
+  .person,
+  .contact-item,
+  .portal-panel,
+  .form-card,
+  .mission { padding: 1.15rem; }
+}
