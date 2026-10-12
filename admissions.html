@@ -73,57 +73,7 @@
           <p class="lead">
             Choose whichever way suits you. The office will confirm availability in the class
             you are asking about.
-          </p>URGENT: FINISH THE DAREL HIKMAH SCHOOL WEBSITE TODAY.
-
-You have spent too much time analysing and debugging without producing visible progress. Stop lengthy investigations and work directly on the existing project files.
-
-PROJECT:
-C:\Users\USER\Downloads\darel-hikmah-academy\DAREL-HIKMAH-SCHOOL-WEBSITE
-
-RULES:
-1. Do not spend more than 2 minutes analysing before taking action.
-2. Do not recreate the project or redesign the existing website.
-3. Do not change working public website pages unnecessarily.
-4. Make small, concrete changes directly to the files.
-5. After each change, run a relevant test and report the result.
-6. Never invent database tables, columns, policies, or backend behaviour.
-7. Never use demo data as if it were real school records.
-8. Never expose Supabase secret/service-role keys.
-
-PRIORITY ORDER:
-
-A. AUTHENTICATION
-- Inspect the existing Supabase login and session-protection files.
-- Fix the admin login validation so it uses email and password, not an admission/staff number.
-- Verify the authenticated account against public.profiles.
-- Require role = admin and is_active = true for the admin dashboard.
-- Ensure the other dashboards enforce their corresponding roles.
-- Unauthenticated, inactive, missing-profile, and wrong-role users must not access protected dashboards.
-- Fix actual bugs instead of endlessly debugging test harnesses.
-
-B. REAL DASHBOARD DATA
-- Inspect the existing dashboard JavaScript.
-- Identify which dashboards still use PORTAL_DEMO_DATA.
-- Replace demo data with real Supabase queries only where the actual schema is known.
-- If the schema is unknown, do not guess. Report the exact missing table/column information.
-
-C. VISIBLE RESULTS
-- Test the login page and all four dashboards.
-- Check browser console errors and missing script files.
-- Confirm the dashboards do not display fabricated student records, results, fees, attendance, or announcements.
-- Confirm unauthenticated users are redirected to login.
-- Do not claim real login or database operations work unless actually verified.
-
-D. FINAL REPORT
-Give me only:
-1. Files actually changed.
-2. Features now working.
-3. Tests passed and failed.
-4. The exact remaining blockers.
-5. The next action I must perform manually, if any.
-
-Start by inspecting the current files, then make the highest-priority fix immediately. Do not just explain what you intend to do. EDIT THE FILES AND TEST THEM.
-        </div>
+          </p>   </div>
 
         <div class="grid grid--four">
           <article class="card reveal">
