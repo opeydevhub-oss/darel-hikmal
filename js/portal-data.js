@@ -736,7 +736,7 @@ var term = r[7].data;
         return {
           title: a.title,
           meta: "Posted " + fmtDate(a.created_at) + " • " + (a.audience || "all"),
-          badge: a.is_published ? { text: "Published", tone: "ok" } : { text: "Draft", tone: "muted" },
+          badge: a.status === "published" ? { text: "Published", tone: "ok" } : { text: "Draft", tone: "muted" },
           body: a.body || ""
         };
       });
