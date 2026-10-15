@@ -74,7 +74,7 @@
   /* Current term row (is_current = true). */
   function currentTerm(client) {
 return client.from("terms").select("id,name,session_id").eq("is_current", true).maybeSingle();
-
+  }
   /* Resolve the logged-in student row via the profile id. */
   function resolveStudent(client, profileId) {
     return client.from("students")
