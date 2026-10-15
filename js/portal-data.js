@@ -701,27 +701,40 @@ var term = r[7].data;
         return sum + Math.max(0, remainingKobo) / 100;
       }, 0);
       var studentRows = students.map(function (s) {
-  return [
-    s.admission_number || "—",
-    s.full_name,
-    classById[s.current_class_id] ? classById[s.current_class_id].name : "—",
-    s.enrolled_session_id ? "Enrolled" : "Not enrolled"
-  ];
-});
-      var staffRows = staffList.map(function (s) {
-        return [s.staff_number || "—", s.full_name, s.department || "—", s.is_active ? "Active" : "Inactive"];
+        return [
+          s.admission_no || "—",
+          [s.first_name, s.last_name].filter(Boolean).join(" ") || "—",
+          "—",
+          (s.status || "unknown").toUpperCase()
+        ];
       });
-      
-      var classRows = classes.map(function (c) {
-        var pupilCount = students.filter(function (s) {
-          return s.current_class_id === c.id;
-        }).length;
 
-        return [c.name, c.level || "—", "—", String(pupilCount)];
+      var staffRows = staffList.map(function (s) {
+        return [
+          s.staff_no || "—",
+          s.full_name || "—",
+          s.job_title || "—",
+          (s.status || "unknown").toUpperCase()
+        ];
+      });
+
+      var classRows = classes.map(function (c) {
+        return [
+          c.name || "—",
+          [c.level, c.arm].filter(Boolean).join(" ") || "—",
+          "—",
+          "—"
+        ];
       });
 
       var admissionRows = admissions.map(function (a) {
-        return ["ADM-" + String(a.id).padStart(4, "0"), a.student_name, a.class_applied || "—", fmtDate(a.created_at), (a.status || "").toUpperCase()];
+        return [
+          "ADM-" + String(a.id).slice(0, 8).toUpperCase(),
+          a.applicant_name || "—",
+          a.class_applied || "—",
+          fmtDate(a.created_at),
+          (a.status || "").toUpperCase()
+        ];
       });
         var feeRows = (fees.data || []).map(function (f) {
         return [
