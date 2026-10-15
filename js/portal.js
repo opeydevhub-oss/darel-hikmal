@@ -185,6 +185,7 @@ var PortalDashboard = {
     }
   },
 
+  
   load: function () {
     var self = this;
     var panels = portalQuery("[data-dash-panels]");
@@ -192,23 +193,35 @@ var PortalDashboard = {
 
     panels.innerHTML = this.skeletonMarkup("Loading your dashboard…");
 
-    PortalData.getDashboard(this.role).then(function (response) {
-      if (response.error) {
-        self.renderError(portalQuery("[data-dash-panels]"), response.error.message || "Could not load the dashboard.");
-        return;
-      }
-      self.config = response.data;
-      self.renderSide();
-      self.renderHeader();
-      self.renderStats();
-      self.renderPanels();
+    PortalData.getDashboard(this.role)
+      .then(function (response) {
+        if (response.error) {
+          self.renderError(
+            panels,
+            response.error.message || "Could not load the dashboard."
+          );
+          return;
+        }
 
-      var wanted = (window.location.hash || "").replace("#", "");
-      if (wanted && self.panelById(wanted)) {
-        self.activate(wanted, false);
-      }
-    });
+        self.config = response.data;
+        self.renderSide();
+        self.renderHeader();
+        self.renderStats();
+        self.renderPanels();
+
+        var wanted = (window.location.hash || "").replace("#", "");
+        if (wanted && self.panelById(wanted)) {
+          self.activate(wanted, false);
+        }
+      })
+      .catch(function () {
+        self.renderError(
+          panels,
+          "The dashboard could not connect successfully. Check your connection and try again."
+        );
+      });
   },
+
 
   refresh: function () {
     this.config = null;
