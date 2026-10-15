@@ -701,9 +701,15 @@ var term = r[7].data;
       var admissionRows = admissions.map(function (a) {
         return ["ADM-" + String(a.id).padStart(4, "0"), a.student_name, a.class_applied || "—", fmtDate(a.created_at), (a.status || "").toUpperCase()];
       });
-      var feeRows = (fees.data || []).map(function (f) {
-        return ["FR-" + String(f.id).padStart(4, "0"), studentById[f.student_id] ? studentById[f.student_id].full_name : "—", f.type + " (" + (term ? term.name : "") + ")", (f.status || "").toUpperCase()];
-      });
+  var feeRows = (fees.data || []).map(function (f) {
+  return [
+    "FR-" + String(f.id).padStart(4, "0"),
+    studentById[f.student_id] ? studentById[f.student_id].full_name : "—",
+    f.type + " (" + (term ? term.name : "") + ")",
+    money(f.amount),
+    (f.status || "").toUpperCase()
+  ];
+});
       var announcementRecords = announcements.map(function (a) {
         return {
           title: a.title,
