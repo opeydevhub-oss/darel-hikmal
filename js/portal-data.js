@@ -644,7 +644,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
     if (!client) { return Promise.resolve(nc()); }
     return Promise.all([
       client.from("students").select("id,admission_no,first_name,last_name,gender,status").order("first_name"),
-      client.from("staff").select("id,staff_number,full_name,job_title,department,is_active").order("full_name"),
+      client.from("staff").select("id,staff_no,full_name,job_title,status").order("full_name"),
       client.from("classes").select("id,name,level,year_group,homeroom").order("name"),
       client.from("admissions").select("id,student_name,parent_name,class_applied,status,created_at,reviewed_by,reviewed_at").order("created_at", { ascending: false }),
       client.from("fee_records").select("id,student_id,term_id,fee_type,amount_due_kobo,status", { count: "exact" }),
