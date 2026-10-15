@@ -695,9 +695,15 @@ var term = r[7].data;
       var staffRows = staffList.map(function (s) {
         return [s.staff_number || "—", s.full_name, s.department || "—", s.is_active ? "Active" : "Inactive"];
       });
+      
       var classRows = classes.map(function (c) {
-        return [c.name, c.level || "—", "", "0 / —"];
+        var pupilCount = students.filter(function (s) {
+          return s.current_class_id === c.id;
+        }).length;
+
+        return [c.name, c.level || "—", "—", String(pupilCount)];
       });
+
       var admissionRows = admissions.map(function (a) {
         return ["ADM-" + String(a.id).padStart(4, "0"), a.student_name, a.class_applied || "—", fmtDate(a.created_at), (a.status || "").toUpperCase()];
       });
