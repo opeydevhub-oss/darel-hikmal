@@ -679,10 +679,9 @@ var term = r[7].data;
       var classById = {}; classes.forEach(function (c) { classById[c.id] = c; });
       var studentById = {}; students.forEach(function (s) { studentById[s.id] = s; });
 
-      var totalFees = (fees.data || []).reduce(function (sum, f) { return sum + Number(f.amount || 0); }, 0);
+            var totalFees = (fees.data || []).reduce(function (sum, f) { return sum + Number(f.amount_due_kobo || 0) / 100; }, 0);
       var outstanding = (fees.data || []).filter(function (f) { return f.status !== "paid" && f.status !== "waived"; });
-      var outstandingTotal = outstanding.reduce(function (sum, f) { return sum + Number(f.amount || 0); }, 0);
-
+      var outstandingTotal = outstanding.reduce(function (sum, f) { return sum + Number(f.amount_due_kobo || 0) / 100; }, 0);
       var studentRows = students.map(function (s) {
   return [
     s.admission_number || "—",
