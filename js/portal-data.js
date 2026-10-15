@@ -758,7 +758,7 @@ var term = r[7].data;
         {
           id: "pupils", title: "Manage pupils", intro: "Add, move or update pupil records.",
           kind: "table", caption: "All pupils on roll",
-          columns: ["Admission no.", "Pupil", "Class", "Enrollment"],
+          columns: ["Admission no.", "Pupil", "Class", "Status"],
           rows: studentRows,
           actions: ["add", "edit", "delete"],
           emptyMessage: "No pupils match this search."
