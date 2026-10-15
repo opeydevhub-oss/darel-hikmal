@@ -815,7 +815,7 @@ var term = r[7].data;
             { label: "Pupils on roll", value: String(students.length), hint: "across all classes", tone: "good" },
             { label: "Staff", value: String(staffList.length), hint: "teaching and support" },
             { label: "Fees outstanding", value: money(outstandingTotal) || "—", hint: outstanding.length + " unpaid invoices", tone: "alert" },
-            { label: "Open applications", value: String(admissions.filter(function (a) { return a.status === "new" || a.status === "reviewing"; }).length), hint: "awaiting decision", tone: "warn" }
+            { label: "Open applications", value: String(admissions.filter(function (a) { return a.status === "new" || a.status === "reviewing"; }).length), hint: "awaiting decision", tone: "warn" }],
           panels: panels,
           metaTerm: term ? term.name : "",
           metaSession: ""
