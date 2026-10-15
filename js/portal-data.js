@@ -644,7 +644,7 @@
     var client = c();
     if (!client) { return Promise.resolve(nc()); }
     return Promise.all([
-      client.from("students").select("id,admission_number,full_name,gender,current_class_id,enrolled_session_id,status").order("full_name"),
+      client.from("students").select("id,admission_number,full_name,gender,current_class_id,enrolled_session_id").order("full_name"),
       client.from("staff").select("id,staff_number,full_name,job_title,department,is_active").order("full_name"),
       client.from("classes").select("id,name,level,year_group,homeroom").order("name"),
       client.from("admissions").select("id,student_name,parent_name,class_applied,status,created_at,reviewed_by,reviewed_at").order("created_at", { ascending: false }),
@@ -685,8 +685,13 @@ var term = r[7].data;
       var outstandingTotal = outstanding.reduce(function (sum, f) { return sum + Number(f.amount || 0); }, 0);
 
       var studentRows = students.map(function (s) {
-        return [s.admission_number || "—", s.full_name, classById[s.current_class_id] ? classById[s.current_class_id].name : "—", s.enrolled_session_id ? "Yes" : "—", (s.status || "").toUpperCase()];
-      });
+  return [
+    s.admission_number || "—",
+    s.full_name,
+    classById[s.current_class_id] ? classById[s.current_class_id].name : "—",
+    s.enrolled_session_id ? "Enrolled" : "Not enrolled"
+  ];
+});
       var staffRows = staffList.map(function (s) {
         return [s.staff_number || "—", s.full_name, s.department || "—", s.is_active ? "Active" : "Inactive"];
       });
@@ -712,7 +717,7 @@ var term = r[7].data;
         {
           id: "pupils", title: "Manage pupils", intro: "Add, move or update pupil records.",
           kind: "table", caption: "All pupils on roll",
-          columns: ["Admission no.", "Pupil", "Class", "Enrolled", "Status"],
+          columns: ["Admission no.", "Pupil", "Class", "Enrollment"],
           rows: studentRows,
           actions: ["add", "edit", "delete"],
           emptyMessage: "No pupils match this search."
