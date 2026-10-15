@@ -739,7 +739,9 @@ var term = r[7].data;
         var feeRows = (fees.data || []).map(function (f) {
         return [
           "FR-" + String(f.id).padStart(4, "0"),
-          studentById[f.student_id] ? studentById[f.student_id].full_name : "—",
+          studentById[f.student_id]
+  ? [studentById[f.student_id].first_name, studentById[f.student_id].last_name].filter(Boolean).join(" ")
+  : "—",
           (f.fee_type || "School fee") + " (" + (term ? term.name : "") + ")",
           money(Number(f.amount_due_kobo || 0) / 100),
           (f.status || "").toUpperCase()
