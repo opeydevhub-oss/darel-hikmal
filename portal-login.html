@@ -2,168 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Secure portal sign-in for Darel Hikmah International Academy.">
   <title>Portal Sign In | Darel Hikmah International Academy</title>
-  <meta name="description" content="Secure sign-in for the Darel Hikmah International Academy student, parent, staff and administrator portal.">
-  <link rel="icon" href="images/SCHOOL_LOGO.png">
+  <link rel="icon" href="images/logo.png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/responsive.css">
-<link rel="stylesheet" href="portal.css">
+  <link rel="stylesheet" href="css/portal.css">
 </head>
-<body class="portal-body">
-  <a class="skip-link" href="#main-content">Skip to main content</a>
-
-  <div class="demo-bar">
-    <div class="container demo-bar__inner">
-      <span class="demo-bar__tag">Demonstration</span>
-      <span class="demo-bar__text">
-        This form is a design demonstration. It is not connected to a sign-in service,
-        no account is checked, and <strong>no password is requested, read or stored</strong>.
-      </span>
-    </div>
-  </div>
-
+<body>
   <header class="site-header">
-    <div class="scroll-progress" aria-hidden="true"></div>
-    <div class="navbar">
-      <div class="container navbar__inner">
-        <a class="brand" href="index.html">
-          <span class="brand__logo">
-            <span class="photo">
-              <img src="images/SCHOOL_LOGO.png" alt="School logo: Darel Hikmah International Academy">
-              <span class="photo__label"><span class="photo__filename">SCHOOL_LOGO.png</span></span>
-            </span>
-          </span>
-          <span class="brand__text">
-            <span class="brand__name">Darel Hikmah</span>
-            <span class="brand__name brand__name--full">International Academy</span>
-            <span class="brand__motto">Education for Positive Change</span>
-          </span>
-        </a>
+    <div class="container header-inner">
+      <a class="brand" href="index.html">
+        <img src="images/logo.png" alt="Darel Hikmah International Academy logo">
+        <span class="brand-text">
+          <strong>DAREL HIKMAH</strong>
+          <small>INTERNATIONAL ACADEMY</small>
+        </span>
+      </a>
 
-        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
-          <span class="nav-toggle__bars" aria-hidden="true"></span>
-          Menu
-        </button>
+      <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
 
-        <nav class="site-nav" id="site-nav" aria-label="Main navigation">
-          <ul class="site-nav__list">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="about.html">About</a></li>
-            <li><a href="programmes.html">Programmes</a></li>
-            <li><a href="activities.html">Activities</a></li>
-            <li><a href="admissions.html">Admissions</a></li>
-            <li><a href="portal.html" aria-current="page">Portal</a></li>
-            <li><a href="contact.html">Contact</a></li>
-          </ul>
-          <div class="site-nav__cta">
-            <a class="btn btn--primary btn--small" href="admissions.html">Admission Enquiry</a>
-          </div>
-        </nav>
-      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="programmes.html">Programmes</a>
+        <a href="admissions.html">Admissions</a>
+        <a href="contact.html">Contact</a>
+        <a href="portal-login.html" aria-current="page">Portal</a>
+      </nav>
     </div>
   </header>
 
-  <main id="main-content">
-    <section class="page-hero">
+  <main id="main-content" class="portal-page">
+    <section class="portal-login-section">
       <div class="container">
-        <p class="breadcrumb"><a href="index.html">Home</a> / <a href="portal.html">Portal</a> / Sign in</p>
-        <h1>Portal sign in</h1>
-        <p>Sign in with the email address and password registered by the school office. Your account determines which portal you can access.</p>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="container">
-        <div class="signin">
-          <div class="signin__panel">
-<div class="field-note" id="signin-field-note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="4.5" y="10.5" width="15" height="9.5" rx="2"></rect>
-              <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"></path>
-            </svg>
-            <div>
-              <strong>Secure school sign-in.</strong> Your credentials are verified by Supabase Authentication. Access to student, parent, staff and administrator records is controlled by your school account permissions.
-            </div>
+        <div class="portal-login-card">
+          <div class="portal-login-heading">
+            <img src="images/logo.png" alt="" class="portal-logo">
+            <p class="eyebrow">Darel Hikmah International Academy</p>
+            <h1>School Portal</h1>
+            <p>Sign in with your authorised school account to continue.</p>
           </div>
 
-            <form data-signin-form novalidate>
-              <div class="form-row" data-signin-field="email">
-                <label for="portal-email">Email address</label>
-                <input class="form-control" type="email" id="portal-email" name="portalEmail"
-                       inputmode="email" autocomplete="email" spellcheck="false"
-                       placeholder="you@example.com"
-                       aria-describedby="portal-email-hint">
-                <span class="form-field-hint" id="portal-email-hint">
-                  Use the email address linked to your school account. Your assigned role is checked automatically after sign-in.
-                </span>
-                <span class="form-field-error" role="alert"></span>
-              </div>
-
-              <div class="form-row form-field--disabled" id="signin-password-row" data-signin-field="password">
-                <label for="portal-password">Password</label>
-                <input class="form-control" type="password" id="portal-password" name="portalPassword"
-                       aria-describedby="portal-password-hint"
-                       autocomplete="current-password" required>
-                <span class="form-field-hint" id="portal-password-hint">
-                  Your password is checked securely by Supabase Authentication.
-                </span>
-              </div>
-
-              <div class="btn-row mt-1">
-                <button class="btn btn--primary" type="submit">Sign in</button>
-                <a class="btn btn--ghost" href="portal.html">Back to the portals</a>
-              </div>
-
-  
-            </form>
-
-            <div class="notice notice--warn mt-2" data-signin-result hidden role="status"></div>
-          </div>
-
-          <aside class="signin__aside">
-            <h2>What each portal shows</h2>
-            <p>
-              Every portal has its own layout and its own menu, because each group needs
-              different information.
-            </p>
-
-            <h3>Student</h3>
-            <ul class="list-check">
-              <li>Class information and subject list</li>
-              <li>Attendance record</li>
-              <li>Assignments and learning materials</li>
-              <li>School announcements</li>
-            </ul>
-
-            <h3>Parent</h3>
-            <ul class="list-check">
-              <li>Pupil record and class information</li>
-              <li>Attendance records and messages</li>
-              <li>Results and report cards</li>
-              <li>Fees, invoices and application status</li>
-            </ul>
-
-            <h3>Staff</h3>
-            <ul class="list-check">
-              <li>Take the register for each lesson</li>
-              <li>Class list and pupil administration</li>
-              <li>Set assignments and share materials</li>
-              <li>Enter continuous assessment marks</li>
-            </ul>
-
-            <h3>Administrator</h3>
-            <ul class="list-check">
-              <li>Manage pupils, staff and classes</li>
-              <li>Admissions applications</li>
-              <li>Fees, invoices and payments</li>
-              <li>Announcements and school activities</li>
-            </ul>
-
-            <div class="btn-row mt-2">
-              <a class="btn btn--primary" href="portal-student.html">See a sample dashboard</a>
+          <form data-signin-form novalidate>
+            <div class="form-group">
+              <label for="portal-email">Email address</label>
+              <input id="portal-email" type="email" name="portalEmail"
+                autocomplete="username" placeholder="Enter your school email" required>
             </div>
-          </aside>
+
+            <div class="form-group">
+              <label for="portal-password">Password</label>
+              <input id="portal-password" type="password" name="portalPassword"
+                autocomplete="current-password" placeholder="Enter your password" required>
+            </div>
+
+            <div data-signin-result hidden role="status" aria-live="polite"></div>
+
+            <button class="btn btn-primary" type="submit">Sign In</button>
+          </form>
+
+          <p class="portal-login-note">
+            Access is limited to authorised students, parents and school staff.
+            If you need help signing in, contact the school administration.
+          </p>
+
+          <a class="portal-back-link" href="index.html">← Back to school website</a>
         </div>
       </div>
     </section>
@@ -171,91 +78,14 @@
 
   <footer class="site-footer">
     <div class="container">
-      <div class="footer-grid">
-        <div>
-          <div class="footer-brand">
-            <span class="brand__logo">
-              <span class="photo">
-                <img src="images/SCHOOL_LOGO.png" alt="Darel Hikmah International Academy logo">
-                <span class="photo__label"><span class="photo__filename">SCHOOL_LOGO.png</span></span>
-              </span>
-            </span>
-            <span class="brand__text">
-              <span class="brand__name">Darel Hikmah</span>
-              <span class="brand__name brand__name--full">International Academy</span>
-              <span class="brand__motto">Education for Positive Change</span>
-            </span>
-          </div>
-          <p class="mt-1">
-            Established January 2011. Western and Islamic education in Duste Alhaji, Abuja, FCT.
-          </p>
-          <p class="muted">
-            Demonstration website. Portal screens use fictional sample data. Information and
-            images are to be confirmed by the school before publication.
-          </p>
-        </div>
-
-        <div>
-          <h3>Quick Links</h3>
-          <ul>
-            <li><a href="about.html">About the School</a></li>
-            <li><a href="programmes.html">Programmes and Classes</a></li>
-            <li><a href="activities.html">Activities and Visits</a></li>
-            <li><a href="admissions.html">Admissions</a></li>
-            <li><a href="portal.html">Portal</a></li>
-            <li><a href="contact.html">Contact Us</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h3>Portal</h3>
-          <ul>
-            <li><a href="portal-login.html">Sign In</a></li>
-            <li><a href="portal-student.html">Student Portal</a></li>
-            <li><a href="portal-parent.html">Parent Portal</a></li>
-            <li><a href="portal-staff.html">Staff Portal</a></li>
-            <li><a href="portal-admin.html">Administrator Portal</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h3>Contact the School</h3>
-          <ul class="footer-contact">
-            <li>
-              <span class="footer-contact__label">Address</span>
-              <span>No. 66 Zone C Sokale, Duste Alhaji, Abuja, FCT, Nigeria</span>
-            </li>
-            <li>
-              <span class="footer-contact__label">Phone</span>
-              <span><a href="tel:+2348064738239">08064738239</a></span>
-            </li>
-            <li>
-              <span class="footer-contact__label">WhatsApp</span>
-              <span><a href="https://wa.me/2348058519527" target="_blank" rel="noopener">08058519527</a></span>
-            </li>
-            <li>
-              <span class="footer-contact__label">Email</span>
-              <span><a href="mailto:darelhikmah@gmail.com">darelhikmah@gmail.com</a></span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="footer-bottom">
-        <p>&copy; <span data-current-year>2026</span> Darel Hikmah International Academy. All rights reserved.</p>
-        <p>Education for Positive Change</p>
-      </div>
+      <p>&copy; <span id="current-year"></span> Darel Hikmah International Academy. All rights reserved.</p>
     </div>
   </footer>
 
-  <button class="to-top" type="button" aria-label="Back to top of page">&uarr;</button>
-
   <script src="js/main.js"></script>
-  <script src="js/portal-data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/portal.js"></script>
-
 </body>
-</html>
+            </html>
