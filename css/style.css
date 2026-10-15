@@ -1555,3 +1555,20 @@ html.no-motion main { transition: none; }
     transform: scale(1.07);
   }
 }
+
+/* Display real photos by default; show labels only for missing images. */
+.photo img {
+  display: block;
+}
+
+.photo--empty img {
+  display: none;
+}
+
+.photo__label {
+  display: none;
+}
+
+.photo--empty .photo__label {
+  display: flex;
+}
