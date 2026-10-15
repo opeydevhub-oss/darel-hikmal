@@ -653,14 +653,29 @@
       client.from("announcements").select("id,title,body,audience,is_published,created_at").order("created_at", { ascending: false }),
       currentTerm(client)
     ]).then(function (r) {
-      var students = r[0].data || [];
-      var staffList = r[1].data || [];
-      var classes = r[2].data || [];
-      var admissions = r[3].data || [];
-      var fees = r[4];
-      var payments = r[5];
-      var announcements = r[6].data || [];
-      var term = r[7].data;
+      
+var failedQuery = r.find(function (item) {
+  return item && item.error;
+});
+
+if (failedQuery) {
+  return {
+    data: null,
+    error: {
+      message: failedQuery.error.message ||
+        "A database query failed. Check Supabase permissions and configuration."
+    }
+  };
+}
+
+var students = r[0].data || [];
+var staffList = r[1].data || [];
+var classes = r[2].data || [];
+var admissions = r[3].data || [];
+var fees = r[4];
+var payments = r[5];
+var announcements = r[6].data || [];
+var term = r[7].data;
 
       var classById = {}; classes.forEach(function (c) { classById[c.id] = c; });
       var studentById = {}; students.forEach(function (s) { studentById[s.id] = s; });
