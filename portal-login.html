@@ -1,84 +1,148 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Secure portal sign-in for Darel Hikmah International Academy.">
-  <title>Portal Sign In | Darel Hikmah International Academy</title>
-  <link rel="icon" href="images/logo.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Secure sign-in for Darel Hikmah International Academy students, parents and staff.">
+  <meta name="theme-color" content="#f8f5ec">
+  <title>School Portal | Darel Hikmah International Academy</title>
+
+  <link rel="icon" href="images/SCHOOL_LOGO.png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/responsive.css">
-  <link rel="stylesheet" href="css/portal.css">
+  <link rel="stylesheet" href="portal.css">
 </head>
-<body>
+<body class="portal-body">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
   <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="index.html">
-        <img src="images/logo.png" alt="Darel Hikmah International Academy logo">
-        <span class="brand-text">
-          <strong>DAREL HIKMAH</strong>
-          <small>INTERNATIONAL ACADEMY</small>
-        </span>
-      </a>
+    <div class="scroll-progress" aria-hidden="true"></div>
+    <div class="navbar">
+      <div class="container navbar__inner">
+        <a class="brand" href="index.html" aria-label="Darel Hikmah International Academy home">
+          <span class="brand__logo">
+            <img src="images/SCHOOL_LOGO.png" alt="" width="56" height="56">
+          </span>
+          <span class="brand__text">
+            <span class="brand__name">Darel Hikmah</span>
+            <span class="brand__name brand__name--full">International Academy</span>
+            <span class="brand__motto">Education for Positive Change</span>
+          </span>
+        </a>
 
-      <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
+        <button class="nav-toggle" type="button"
+          aria-expanded="false" aria-controls="site-nav">
+          <span class="nav-toggle__bars" aria-hidden="true"></span>
+          Menu
+        </button>
 
-      <nav class="main-nav" aria-label="Main navigation">
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="programmes.html">Programmes</a>
-        <a href="admissions.html">Admissions</a>
-        <a href="contact.html">Contact</a>
-        <a href="portal-login.html" aria-current="page">Portal</a>
-      </nav>
+        <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+          <ul class="site-nav__list">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="programmes.html">Programmes</a></li>
+            <li><a href="activities.html">Activities</a></li>
+            <li><a href="admissions.html">Admissions</a></li>
+            <li><a href="portal.html" aria-current="page">Portal</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+          <div class="site-nav__cta">
+            <a class="btn btn--primary btn--small" href="admissions.html">
+              Admission Enquiry
+            </a>
+          </div>
+        </nav>
+      </div>
     </div>
   </header>
 
-  <main id="main-content" class="portal-page">
-    <section class="portal-login-section">
+  <main id="main-content">
+    <section class="section">
       <div class="container">
-        <div class="portal-login-card">
-          <div class="portal-login-heading">
-            <img src="images/logo.png" alt="" class="portal-logo">
-            <p class="eyebrow">Darel Hikmah International Academy</p>
-            <h1>School Portal</h1>
-            <p>Sign in with your authorised school account to continue.</p>
-          </div>
-
-          <form data-signin-form novalidate>
-            <div class="form-group">
-              <label for="portal-email">Email address</label>
-              <input id="portal-email" type="email" name="portalEmail"
-                autocomplete="username" placeholder="Enter your school email" required>
-            </div>
-
-            <div class="form-group">
-              <label for="portal-password">Password</label>
-              <input id="portal-password" type="password" name="portalPassword"
-                autocomplete="current-password" placeholder="Enter your password" required>
-            </div>
-
-            <div data-signin-result hidden role="status" aria-live="polite"></div>
-
-            <button class="btn btn-primary" type="submit">Sign In</button>
-          </form>
-
-          <p class="portal-login-note">
-            Access is limited to authorised students, parents and school staff.
-            If you need help signing in, contact the school administration.
-          </p>
-
-          <a class="portal-back-link" href="index.html">← Back to school website</a>
+        <div class="section-heading">
+          <p class="eyebrow">Darel Hikmah International Academy</p>
+          <h1>School Portal</h1>
+          <p>Secure access for authorised students, parents and school staff.</p>
         </div>
+
+        <div class="signin">
+          <section class="signin__panel" aria-labelledby="signin-title">
+            <p class="eyebrow">Welcome back</p>
+            <h2 id="signin-title">Sign in to your account</h2>
+            <p>Enter the email address and password registered with the school.</p>
+
+            <form data-signin-form>
+              <div class="form-field">
+                <label for="portal-email">Email address</label>
+                <input
+                  class="form-control"
+                  id="portal-email"
+                  type="email"
+                  name="portalEmail"
+                  autocomplete="username"
+                  placeholder="Enter your school email"
+                  required
+                >
+              </div>
+
+              <div class="form-field">
+                <label for="portal-password">Password</label>
+                <input
+                  class="form-control"
+                  id="portal-password"
+                  type="password"
+                  name="portalPassword"
+                  autocomplete="current-password"
+                  placeholder="Enter your password"
+                  required
+                >
+              </div>
+
+              <div data-signin-result hidden role="status" aria-live="polite"></div>
+
+              <button class="btn btn--primary" type="submit">
+                Sign In
+              </button>
+            </form>
+
+            <p class="form-field__hint">
+              Having trouble signing in? Contact the school administration
+              for assistance.
+            </p>
+          </section>
+
+          <aside class="signin__aside">
+            <p class="eyebrow">School access</p>
+            <h2>One school. One secure portal.</h2>
+            <p>
+              Use your authorised school account to access the information
+              and services assigned to your role.
+            </p>
+            <ul class="list-check">
+              <li>Student learning and school records</li>
+              <li>Parent access to relevant school information</li>
+              <li>Staff and administration services</li>
+            </ul>
+            <p>
+              Your account permissions determine which information you can see.
+            </p>
+          </aside>
+        </div>
+
+        <p class="text-center mt-2">
+          <a href="index.html">← Return to the school website</a>
+        </p>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="container">
-      <p>&copy; <span id="current-year"></span> Darel Hikmah International Academy. All rights reserved.</p>
+      <p>
+        &copy; <span id="current-year"></span>
+        Darel Hikmah International Academy. All rights reserved.
+      </p>
     </div>
   </footer>
 
@@ -88,4 +152,4 @@
   <script src="js/supabase-client.js"></script>
   <script src="js/portal.js"></script>
 </body>
-            </html>
+</html>
