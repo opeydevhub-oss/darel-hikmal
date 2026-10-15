@@ -643,7 +643,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
     var client = c();
     if (!client) { return Promise.resolve(nc()); }
     return Promise.all([
-      client.from("students").select("id,admission_number,full_name,gender,current_class_id,enrolled_session_id").order("full_name"),
+      client.from("students").select("id,admission_no,first_name,last_name,gender,status").order("first_name"),
       client.from("staff").select("id,staff_number,full_name,job_title,department,is_active").order("full_name"),
       client.from("classes").select("id,name,level,year_group,homeroom").order("name"),
       client.from("admissions").select("id,student_name,parent_name,class_applied,status,created_at,reviewed_by,reviewed_at").order("created_at", { ascending: false }),
