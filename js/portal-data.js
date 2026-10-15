@@ -768,7 +768,7 @@ var term = r[7].data;
         {
           id: "staff", title: "Manage staff", intro: "Staff records, roles and class allocations.",
           kind: "table", caption: "All staff",
-          columns: ["Staff no.", "Name", "Department", "Status"],
+          columns: ["Staff no.", "Name", "Job title", "Status"],
           rows: staffRows,
           actions: ["add", "edit", "delete"],
           emptyMessage: "No staff records match this search."
