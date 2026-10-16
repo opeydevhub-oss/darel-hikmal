@@ -667,10 +667,10 @@ var PortalDashboard = {
           { value: "", label: "—" }, { value: "male", label: "Male" }, { value: "female", label: "Female" } ] }
       ],
       staff: [
-        { name: "staff_number", label: "Staff number" },
-        { name: "full_name", label: "Name" },
-        { name: "department", label: "Department" }
-      ],
+  { name: "staff_no", label: "Staff number" },
+  { name: "full_name", label: "Name" },
+  { name: "job_title", label: "Job title" }
+],
       classes: [
         { name: "name", label: "Class name" },
         { name: "level", label: "Level / year group" }
