@@ -148,42 +148,86 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
   };
 
   /* ------------------------------------------------------------------ STUDENT */
+  
   PortalData.getStudentDashboard = function () {
     var client = c();
-    if (!client) { return Promise.resolve(nc()); }
+    if (!client) return Promise.resolve(nc());
 
     return currentProfile().then(function (profRes) {
-      if (!profRes.data) { return { data: null, error: profRes.error || { code: "no-profile" } }; }
-      var profileId = profRes.data.id;
-      return resolveStudent(client, profileId).then(function (stRes) {
-        if (!stRes.data) { return { data: null, error: { code: "no-student-record" } }; }
+      if (profRes.error || !profRes.data) {
+        return {
+          data: null,
+          error: profRes.error || { message: "Your profile could not be found." }
+        };
+      }
+
+      return resolveStudent(client, profRes.data.id).then(function (stRes) {
+        if (stRes.error) {
+          return { data: null, error: stRes.error };
+        }
+
+        if (!stRes.data) {
+          return {
+            data: null,
+            error: {
+              message: "Your login is active, but your student record has not been created by the school yet."
+            }
+          };
+        }
+
         var student = stRes.data;
+        var fullName = student.full_name ||
+          [student.first_name, student.last_name].filter(Boolean).join(" ") ||
+          "Student";
 
-        return Promise.all([
-          client.from("classes").select("id,name,level,year_group").eq("id", student.current_class_id).maybeSingle(),
-          client.from("teaching_assignments")
-            .select("subjects!inner(name),classes!inner(name)", { count: "exact" })
-            .eq("class_id", student.current_class_id),
-          client.from("subjects").select("name").order("name"),
-          client.from("attendance")
-            .select("session_date,status,subject_id,subjects!inner(name)")
-            .eq("student_id", student.id)
-            .order("session_date", { ascending: false }),
-          client.from("fee_records").select("id,type,amount,status").eq("student_id", student.id),
-          client.from("announcements").select("id,title,body,created_at,audience").eq("is_published", true).order("created_at", { ascending: false }),
-          currentTerm(client),
-          client.from("enrolments").select("id,class_id,student_id,status").eq("student_id", student.id)
-        ]).then(function (r) {
-          var cls = r[0].data;
-          var classSubjects = r[1].data || [];
-          var allSubjects = r[2].data || [];
-          var attendance = r[3].data || [];
-          var fees = r[4].data || [];
-          var announcements = r[5].data || [];
-          var term = r[6].data;
-          var enrolments = r[7].data || [];
-
-          var classSubjectsList = classSubjects.map(function (a) { return a.subjects && a.subjects.name; }).filter(Boolean);
+        return Promise.resolve({
+          data: {
+            role: "student",
+            roleLabel: "Student Portal",
+            person: {
+              name: fullName,
+              meta: "Admission " + (student.admission_number || "Not assigned")
+            },
+            stats: [
+              { label: "Attendance", value: "—", hint: "No attendance summary loaded" },
+              { label: "Subjects", value: "—", hint: "School records" },
+              { label: "Assignments", value: "—", hint: "School records" },
+              { label: "Fees", value: "—", hint: "School records" }
+            ],
+            panels: [
+              {
+                id: "record",
+                title: "My student record",
+                intro: "Your student details recorded by the school.",
+                kind: "table",
+                caption: "Student information",
+                columns: ["Item", "Detail"],
+                rows: [
+                  ["Name", fullName],
+                  ["Admission number", student.admission_number || "Not assigned"],
+                  ["Gender", student.gender || "Not recorded"],
+                  ["Status", student.status || "Not recorded"]
+                ],
+                emptyMessage: "No student information is available."
+              }
+            ],
+            metaTerm: "",
+            metaSession: ""
+          },
+          error: null
+        });
+      });
+    }).catch(function (err) {
+      return {
+        data: null,
+        error: {
+          message: err && err.message
+            ? err.message
+            : "Could not load the student dashboard."
+        }
+      };
+    });
+  };
 
           // attendance stats (this term if term known, else all rows)
           var total = attendance.length;
