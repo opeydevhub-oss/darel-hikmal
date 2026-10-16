@@ -97,12 +97,11 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
 
   /* Resolve the logged-in staff row. */
   function resolveStaff(client, profileId) {
-    return client.from("staff")
-      .select("id,profile_id,staff_number,full_name,job_title,department,hire_date,is_active,created_at")
-      .eq("profile_id", profileId)
-      .maybeSingle();
-  }
-
+  return client.from("staff")
+    .select("id,profile_id,staff_no,full_name,job_title,status,created_at")
+    .eq("profile_id", profileId)
+    .maybeSingle();
+}
   /* Resolve the logged-in parent row + their children. */
   function resolveParent(client, profileId) {
     return client.from("parents")
