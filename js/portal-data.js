@@ -77,11 +77,23 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
   }
   /* Resolve the logged-in student row via the profile id. */
   function resolveStudent(client, profileId) {
-    return client.from("students")
-      .select("id,admission_number,full_name,birth_date,gender,current_class_id,enrolled_session_id")
-      .eq("profile_id", profileId)
-      .maybeSingle();
-  }
+  return client.from("students")
+    .select("id,profile_id,admission_no,first_name,last_name,date_of_birth,gender,status")
+    .eq("profile_id", profileId)
+    .is("deleted_at", null)
+    .maybeSingle()
+    .then(function (res) {
+      if (res.error || !res.data) return res;
+
+      var student = res.data;
+      student.admission_number = student.admission_no;
+      student.full_name = [student.first_name, student.last_name]
+        .filter(Boolean)
+        .join(" ");
+
+      return { data: student, error: null };
+    });
+}
 
   /* Resolve the logged-in staff row. */
   function resolveStaff(client, profileId) {
