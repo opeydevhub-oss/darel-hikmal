@@ -391,20 +391,38 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
   };
 
   /* -------------------------------------------------------------------- STAFF */
+  
+  /* -------------------------------------------------------------------- STAFF */
   PortalData.getStaffDashboard = function () {
     var client = c();
-    if (!client) { return Promise.resolve(nc()); }
+
+    if (!client) {
+      return Promise.resolve(nc());
+    }
+
     return currentProfile().then(function (profRes) {
-      if (!profRes.data) { return { data: null, error: profRes.error || { code: "no-profile" } }; }
+      if (!profRes.data) {
+        return {
+          data: null,
+          error: profRes.error || { code: "no-profile" }
+        };
+      }
+
       var profileId = profRes.data.id;
+
       return resolveStaff(client, profileId).then(function (stRes) {
-        if (!stRes.data) { return { data: null, error: { code: "no-staff-record" } }; }
+        if (!stRes.data) {
+          return {
+            data: null,
+            error: { code: "no-staff-record" }
+          };
+        }
+
         var staff = stRes.data;
 
         return Promise.all([
-          // classes this staff member teaches (via teaching_assignments) or is homeroom for
-                    client.from("teaching_assignments")
-            .select("classes!inner(id,name,level),subjects!inner(name)")
+          client.from("teaching_assignments")
+            .select("classes!inner(id,name,level,arm),subjects!inner(name)")
             .eq("staff_id", staff.id),
 
           client.from("assignments")
@@ -416,12 +434,32 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             .select("id,subject:subjects!inner(name),title,storage_path,created_at")
             .eq("uploaded_by", staff.id)
             .order("created_at", { ascending: false }),
+
           client.from("announcements")
-            .select("id,title,body,created_at,audience,is_published")
+            .select("id,title,body,created_at,audience,status")
+            .eq("created_by", profileId)
             .order("created_at", { ascending: false }),
-          client.from("subjects").select("name").order("name"),
+
+          client.from("subjects")
+            .select("name")
+            .order("name"),
+
           currentTerm(client)
         ]).then(function (r) {
+          var failedQuery = r.find(function (item) {
+            return item && item.error;
+          });
+
+          if (failedQuery) {
+            return {
+              data: null,
+              error: {
+                message: failedQuery.error.message ||
+                  "Could not load staff dashboard data."
+              }
+            };
+          }
+
           var taught = r[0].data || [];
           var assignments = r[1].data || [];
           var materials = r[2].data || [];
@@ -430,23 +468,42 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
           var term = r[5].data;
 
           var classIds = [];
-          taught.forEach(function (t) { if (t.classes && !classIds.includes(t.classes.id)) { classIds.push(t.classes.id); } });
+
+          taught.forEach(function (item) {
+            if (
+              item.classes &&
+              !classIds.includes(item.classes.id)
+            ) {
+              classIds.push(item.classes.id);
+            }
+          });
 
           var now = new Date().toISOString();
-          var due = assignments.filter(function (a) { return a.due_at && a.due_at >= now; });
+
+          var due = assignments.filter(function (item) {
+            return item.due_date && item.due_date >= now;
+          });
 
           var panels = [];
 
-          // register (take the register): needs a class + date; default to today + first class
           panels.push({
             id: "attendance",
             title: "Take the register",
             intro: "Mark attendance for a lesson.",
             kind: "register",
             caption: "Class register",
-            classes: classIds,           // consumed by the renderer's register form
-            subjects: allSubjects.map(function (s) { return s.name; }),
-            lessons: [{ ref: "default", time: "", subject: "Select", room: "" }],
+            classes: classIds,
+            subjects: allSubjects.map(function (subject) {
+              return subject.name;
+            }),
+            lessons: [
+              {
+                ref: "default",
+                time: "",
+                subject: "Select",
+                room: ""
+              }
+            ],
             records: [],
             emptyMessage: "There are no lessons waiting to be marked."
           });
@@ -457,9 +514,14 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             intro: "Pupils in the classes you teach.",
             kind: "table",
             caption: "Pupils in your classes",
-            columns: ["Roll no.", "Pupil", "Attendance this term", "Assignments outstanding"],
+            columns: [
+              "Roll no.",
+              "Pupil",
+              "Attendance this term",
+              "Assignments outstanding"
+            ],
             rows: [],
-            emptyMessage: "No pupils are enrolled in your classes yet."
+            emptyMessage: "Pupil lists have not been loaded yet."
           });
 
           panels.push({
@@ -467,29 +529,38 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             title: "Assignments",
             intro: "Work you have set, and what has come back.",
             kind: "records",
-            records: due.map(function (a) {
+            records: due.map(function (item) {
               return {
-                title: (a.subject && a.subject.name) + " — " + a.title,
-                meta: "Due " + fmtDate(a.due_at),
-                badge: { text: "Due", tone: "warn" },
-                body: a.description || a.class ? (a.class.name) : ""
+                title:
+                  ((item.subject && item.subject.name) || "Subject") +
+                  " — " + (item.title || "Untitled assignment"),
+                meta: "Due " + fmtDate(item.due_date),
+                badge: {
+                  text: "Due",
+                  tone: "warn"
+                },
+                body:
+                  item.description ||
+                  ((item.class && item.class.name) || "")
               };
             }),
-            emptyMessage: "You have not set any assignments yet."
+            emptyMessage: "You have no upcoming assignments."
           });
 
           panels.push({
             id: "results",
             title: "Enter results",
-            intro: "Enter or update continuous assessment marks. Published rows are locked.",
+            intro: "Enter or update continuous assessment marks.",
             kind: "results",
-            caption: "Results entry — subject, term " + (term ? term.name : ""),
-            note: "Enter a score and grade for each pupil; marks are saved to the record.",
-            subjects: allSubjects.map(function (s) { return s.name; }),
+            caption: "Results entry — " + (term ? term.name : ""),
+            note: "Result entry is not connected to pupil records yet.",
+            subjects: allSubjects.map(function (subject) {
+              return subject.name;
+            }),
             gradeKey: window.PORTAL_GRADE_KEY,
             results: {},
             rows: [],
-            emptyMessage: "No pupils are available to mark."
+            emptyMessage: "No pupil results are loaded yet."
           });
 
           panels.push({
@@ -499,40 +570,77 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             kind: "table",
             caption: "Materials you have shared",
             columns: ["Material", "Subject", "Shared", "Format"],
-            rows: materials.map(function (m) {
-              return [m.title || "—", (m.subject && m.subject.name) || "—", fmtDate(m.created_at) || "—", m.file_path ? "File" : "Link"];
+            rows: materials.map(function (item) {
+              return [
+                item.title || "—",
+                (item.subject && item.subject.name) || "—",
+                fmtDate(item.created_at) || "—",
+                item.storage_path ? "File" : "Link"
+              ];
             }),
-            emptyMessage: "No materials have been shared yet."
+            emptyMessage: "No learning materials have been shared yet."
           });
 
           panels.push({
             id: "announcements",
-            title: "Announcements to my class",
-            intro: "Messages sent to your classes or to individual parents.",
+            title: "My announcements",
+            intro: "Announcements created by your account.",
             kind: "records",
-            records: announcements.map(function (a) {
+            records: announcements.map(function (item) {
+              var published = item.status === "published";
+
               return {
-                title: a.title,
-                meta: "Posted " + fmtDate(a.created_at) + " • " + (a.is_published ? "Published" : "Draft"),
-                badge: a.is_published ? { text: "Published", tone: "ok" } : { text: "Draft", tone: "muted" },
-                body: a.body || ""
+                title: item.title || "Untitled announcement",
+                meta:
+                  "Posted " + fmtDate(item.created_at) +
+                  " • " + (published ? "Published" : (item.status || "Draft")),
+                badge: published
+                  ? { text: "Published", tone: "ok" }
+                  : { text: item.status || "Draft", tone: "muted" },
+                body: item.body || ""
               };
             }),
-            emptyMessage: "You have not sent any announcements yet."
+            emptyMessage: "You have not created any announcements yet."
           });
 
-          var presentToday = 0, totalToday = 0; // real register load happens on demand
+          var presentToday = 0;
+          var totalToday = 0;
 
           return {
             data: {
               role: "staff",
               roleLabel: "Staff Portal",
-              person: { name: staff.full_name, meta: (staff.job_title || "") + " • Staff no. " + staff.staff_number },
+              person: {
+                name: staff.full_name || "Staff",
+                meta:
+                  (staff.job_title || "Staff") +
+                  " • Staff no. " + (staff.staff_no || "—")
+              },
               stats: [
-                { label: "Pupils in class", value: String(classIds.length ? 0 : 0), hint: "across your classes", tone: "muted" },
-                { label: "Attendance today", value: String(presentToday) + " of " + String(totalToday), hint: "marked", tone: "warn" },
-                { label: "Assignments set", value: String(due.length), hint: due.length ? "due soon" : "none due", tone: due.length ? "warn" : "muted" },
-                { label: "Marks to enter", value: "0", hint: "continuous assessment", tone: "alert" }
+                {
+                  label: "Classes assigned",
+                  value: String(classIds.length),
+                  hint: "across your teaching assignments",
+                  tone: "muted"
+                },
+                {
+                  label: "Attendance today",
+                  value: presentToday + " of " + totalToday,
+                  hint: "marked",
+                  tone: "warn"
+                },
+                {
+                  label: "Upcoming assignments",
+                  value: String(due.length),
+                  hint: due.length ? "not yet due" : "none upcoming",
+                  tone: due.length ? "warn" : "muted"
+                },
+                {
+                  label: "Marks to enter",
+                  value: "0",
+                  hint: "results are not connected yet",
+                  tone: "alert"
+                }
               ],
               panels: panels,
               metaTerm: term ? term.name : "",
@@ -544,6 +652,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
       });
     });
   };
+
 
   /* -------------------------------------------------------------------- ADMIN */
   PortalData.getAdminDashboard = function () {
