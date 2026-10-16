@@ -403,14 +403,18 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
 
         return Promise.all([
           // classes this staff member teaches (via teaching_assignments) or is homeroom for
-          client.from("teaching_assignments")
-            .select("classes!inner(id,name,level,year_group),subjects!inner(name)")
+                    client.from("teaching_assignments")
+            .select("classes!inner(id,name,level),subjects!inner(name)")
             .eq("staff_id", staff.id),
+
           client.from("assignments")
-            .select("id,subject:subjects!inner(name),class:classes!inner(name),title,due_at,created_at")
-            .order("due_at", { ascending: false }),
-          client.from("materials")
-            .select("id,subject:subjects!inner(name),title,file_path,created_at")
+            .select("id,subject:subjects!inner(name),class:classes!inner(name),title,description,due_date,created_at")
+            .eq("created_by", staff.id)
+            .order("due_date", { ascending: false }),
+
+          client.from("learning_materials")
+            .select("id,subject:subjects!inner(name),title,storage_path,created_at")
+            .eq("uploaded_by", staff.id)
             .order("created_at", { ascending: false }),
           client.from("announcements")
             .select("id,title,body,created_at,audience,is_published")
