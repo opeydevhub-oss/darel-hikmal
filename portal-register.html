@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Student and staff account registration for Darel Hikmah International Academy.">
+<meta name="description" content="Student, parent and staff account registration for Darel Hikmah International Academy.">
 <title>Portal Registration | Darel Hikmah International Academy</title>
 <link rel="icon" href="images/SCHOOL_LOGO.png">
 <link rel="stylesheet" href="css/style.css">
@@ -17,14 +17,14 @@
 <a class="btn btn--primary btn--small" href="portal-login.html">Sign in</a>
 </div></div></header>
 <main id="main-content"><section class="section"><div class="container">
-<div class="section-heading"><p class="eyebrow">School Portal</p><h1>Request an account</h1><p>Student and staff registrations require approval by the school before access is enabled.</p></div>
+<div class="section-heading"><p class="eyebrow">School Portal</p><h1>Request an account</h1><p>Student, parent and staff registrations require approval by the school before access is enabled.</p></div>
 <div class="signin">
 <section class="signin__panel"><h2>Registration details</h2>
 <form id="portal-register-form">
 <div class="form-field"><label for="full-name">Full name</label><input class="form-control" id="full-name" name="fullName" autocomplete="name" maxlength="120" required></div>
 <div class="form-field"><label for="email">Email address</label><input class="form-control" id="email" name="email" type="email" autocomplete="email" maxlength="254" required></div>
 <div class="form-field"><label for="phone">Phone number (optional)</label><input class="form-control" id="phone" name="phone" type="tel" maxlength="30"></div>
-<div class="form-field"><label for="account-type">Account type</label><select class="form-control" id="account-type" name="accountType" required><option value="">Choose account type</option><option value="student">Student</option><option value="staff">Staff</option></select></div>
+<div class="form-field"><label for="account-type">Account type</label><select class="form-control" id="account-type" name="accountType" required><option value="">Choose account type</option><option value="student">Student</option><option value="parent">Parent / Guardian</option><option value="staff">Staff</option></select></div>
 <div class="form-field"><label for="password">Password (minimum 8 characters)</label><input class="form-control" id="password" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
 <div class="form-field"><label for="confirm-password">Confirm password</label><input class="form-control" id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></div>
 <p id="register-result" role="status" aria-live="polite" hidden></p><button class="btn btn--primary" id="register-submit" type="submit">Submit registration</button>
@@ -48,7 +48,7 @@
     var type = form.elements.accountType.value;
     var password = form.elements.password.value;
     if (password !== form.elements.confirmPassword.value) { message("Passwords do not match."); return; }
-    if (!["student", "staff"].includes(type)) { message("Choose Student or Staff."); return; }
+    if (!["student", "parent", "staff"].includes(type)) { message("Choose Student, Parent / Guardian or Staff."); return; }
     var client = window.SupabaseClient && window.SupabaseClient.getClient();
     if (!client) { message("Registration is unavailable right now. Please contact school administration."); return; }
     submit.disabled = true; submit.textContent = "Submitting…"; result.hidden = true;
