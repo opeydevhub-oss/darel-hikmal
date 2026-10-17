@@ -231,24 +231,46 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
   /* ------------------------------------------------------------------ PARENT */
   PortalData.getParentDashboard = function () {
     var client = c();
-    if (!client) { return Promise.resolve(nc()); }
+    if (!client) return Promise.resolve(nc());
+
     return currentProfile().then(function (profRes) {
-      if (!profRes.data) { return { data: null, error: profRes.error || { code: "no-profile" } }; }
-      var profileId = profRes.data.id;
-      return resolveParent(client, profileId).then(function (parRes) {
-        if (!parRes.data) { return { data: null, error: { code: "no-parent-record" } }; }
+      if (profRes.error || !profRes.data) {
+        return { data: null, error: profRes.error || { message: "Your profile could not be found." } };
+      }
+
+      return resolveParent(client, profRes.data.id).then(function (parRes) {
+        if (parRes.error) return { data: null, error: parRes.error };
+        if (!parRes.data) {
+          return { data: null, error: { message: "Your login is active, but the school has not created your parent record yet." } };
+        }
+
         var parent = parRes.data;
         return parentChildren(client, parent.id).then(function (linkRes) {
-          var children = (linkRes.data || []).map(function (l) { return l.student; }).filter(Boolean);
+          if (linkRes.error) return { data: null, error: linkRes.error };
+
+          var children = (linkRes.data || []).map(function (link) {
+            var student = link.student;
+            if (!student) return null;
+            student.full_name = [student.first_name, student.last_name].filter(Boolean).join(" ");
+            student.admission_number = student.admission_no;
+            return student;
+          }).filter(Boolean);
 
           if (!children.length) {
             return {
               data: {
                 role: "parent",
                 roleLabel: "Parent Portal",
-                person: { name: parent.full_name, meta: "No children linked yet" },
+                person: { name: parent.full_name || "Parent", meta: "No children linked yet" },
                 stats: [],
-                panels: [],
+                panels: [{
+                  id: "children",
+                  title: "Linked children",
+                  intro: "The school will show your child's information after administration links the student record to your account.",
+                  kind: "records",
+                  records: [],
+                  emptyMessage: "No children have been linked to this parent account yet. Please contact the school office."
+                }],
                 metaTerm: "",
                 metaSession: ""
               },
@@ -256,137 +278,149 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             };
           }
 
-          // Scope the dashboard to the first child (multi-child selector is a follow-up).
+          // Keep the current single-child dashboard scope, but use real database columns.
           var child = children[0];
-          return Promise.all([
-            client.from("classes").select("id,name,level,year_group").eq("id", child.current_class_id).maybeSingle(),
-            client.from("attendance")
-              .select("session_date,status,subject_id,subjects!inner(name)")
+          return currentTerm(client).then(function (termRes) {
+            if (termRes.error) return { data: null, error: termRes.error };
+            var term = termRes.data;
+            var enrolmentQuery = client.from("enrolments")
+              .select("id,class_id,student_id,session_id,status,classes(id,name,level,arm),academic_sessions(name)")
               .eq("student_id", child.id)
-              .order("session_date", { ascending: false }),
-            client.from("fee_records").select("id,type,amount,status").eq("student_id", child.id),
-            client.from("announcements").select("id,title,body,created_at,audience").eq("is_published", true).order("created_at", { ascending: false }),
-            client.from("subjects").select("name").order("name"),
-            currentTerm(client),
-            client.from("enrolments").select("id,class_id,student_id,status").eq("student_id", child.id),
-            client.from("results").select("subject:subjects!inner(name),score,max_score,grade,status,published_at")
-          ]).then(function (r) {
-            var cls = r[0].data;
-            var attendance = r[1].data || [];
-            var fees = r[2].data || [];
-            var announcements = r[3].data || [];
-            var allSubjects = r[4].data || [];
-            var term = r[5].data;
-            var enrolments = r[6].data || [];
-            var results = r[6].error ? [] : (function () {
-              // scope results to the child's enrolment + current term in a 2nd pass
-              return [];
-            })();
+              .eq("status", "active");
+            if (term && term.session_id) enrolmentQuery = enrolmentQuery.eq("session_id", term.session_id);
 
-            // re-fetch results scoped correctly
-            var childMeta = cls ? (cls.level || cls.name) + " • Admission " + child.admission_number : "Admission " + child.admission_number;
+            return enrolmentQuery.then(function (enrolRes) {
+              if (enrolRes.error) return { data: null, error: enrolRes.error };
+              var enrolments = enrolRes.data || [];
+              var enrolmentIds = enrolments.map(function (e) { return e.id; });
+              var classIds = enrolments.map(function (e) { return e.class_id; }).filter(Boolean);
+              var classInfo = enrolments.length ? (enrolments[0].classes || null) : null;
 
-            var present = attendance.filter(function (a) { return a.status === "present"; }).length;
-            var pct = attendance.length ? Math.round((present / attendance.length) * 100) + "%" : "—";
+              var requests = [
+                enrolmentIds.length
+                  ? client.from("attendance").select("attendance_date,status,note,enrolment_id").in("enrolment_id", enrolmentIds).order("attendance_date", { ascending: false })
+                  : Promise.resolve({ data: [], error: null }),
+                client.from("fee_records").select("id,fee_type,amount_due_kobo,status,due_date,term_id").eq("student_id", child.id),
+                client.from("announcements").select("id,title,body,created_at,audience,class_id,publish_at,expires_at,status").eq("status", "published").or("publish_at.is.null,publish_at.lte." + new Date().toISOString()).or("expires_at.is.null,expires_at.gt." + new Date().toISOString()).order("created_at", { ascending: false }),
+                enrolmentIds.length
+                  ? client.from("results").select("id,enrolment_id,subject_id,ca_score,exam_score,total,grade,status,published_at,subject:subjects(name)").in("enrolment_id", enrolmentIds).eq("status", "published")
+                  : Promise.resolve({ data: [], error: null }),
+                classIds.length
+                  ? client.from("assignments").select("id,title,description,due_date,class_id,subject:subjects(name)").in("class_id", classIds).order("due_date", { ascending: true })
+                  : Promise.resolve({ data: [], error: null }),
+                classIds.length
+                  ? client.from("learning_materials").select("id,title,created_at,class_id,subject:subjects(name)").in("class_id", classIds).eq("status", "published").order("created_at", { ascending: false })
+                  : Promise.resolve({ data: [], error: null }),
+                client.from("academic_sessions").select("name").eq("is_current", true).maybeSingle()
+              ];
 
-            var panels = [];
+              return Promise.all(requests).then(function (r) {
+                var failed = r.find(function (item) { return item && item.error; });
+                if (failed) return { data: null, error: { message: failed.error.message || "Could not load parent dashboard information." } };
 
-            panels.push({
-              id: "record",
-              title: "Pupil record",
-              intro: "The class and contact information the school holds for your child.",
-              kind: "table",
-              caption: child.full_name + " — " + (cls ? cls.name : ""),
-              columns: ["Item", "Detail"],
-              rows: [
-                ["Pupil", child.full_name],
-                ["Admission number", child.admission_number || "—"],
-                ["Class", cls ? (cls.name + (cls.level ? " (" + cls.level + ")" : "")) : "Not yet allocated"],
-                ["Session", "2025 / 2026"]
-              ],
-              emptyMessage: "No pupil record is available yet."
+                var attendance = r[0].data || [];
+                var fees = r[1].data || [];
+                var announcements = (r[2].data || []).filter(function (a) {
+                  return a.audience === "all" || a.audience === "parents" ||
+                    (a.audience === "class" && classIds.indexOf(a.class_id) !== -1);
+                });
+                var results = r[3].data || [];
+                var assignments = r[4].data || [];
+                var materials = r[5].data || [];
+                var session = r[6].data;
+                var present = attendance.filter(function (a) { return a.status === "present"; }).length;
+                var attendancePct = attendance.length ? Math.round(present / attendance.length * 100) + "%" : "—";
+                var totalFees = fees.reduce(function (sum, fee) { return sum + Number(fee.amount_due_kobo || 0) / 100; }, 0);
+                var childClass = classInfo ? classInfo.name + (classInfo.level ? " (" + classInfo.level + ")" : "") : "Not yet allocated";
+                var resultRows = results.map(function (result) {
+                  return {
+                    title: result.subject && result.subject.name ? result.subject.name : "Subject result",
+                    meta: "Score: " + (result.total == null ? "Not recorded" : result.total) + (result.grade ? " · Grade " + result.grade : ""),
+                    badge: "Published",
+                    body: result.published_at ? "Published " + fmtDate(result.published_at) : "Published result"
+                  };
+                });
+                var workRecords = assignments.map(function (a) {
+                  return { title: a.title, meta: (a.subject && a.subject.name ? a.subject.name + " · " : "") + (a.due_date ? "Due " + fmtDate(a.due_date) : "No due date"), badge: "Assignment", body: a.description || "" };
+                }).concat(materials.map(function (m) {
+                  return { title: m.title, meta: (m.subject && m.subject.name ? m.subject.name + " · " : "") + "Learning material", badge: "Material", body: "" };
+                }));
+
+                var panels = [
+                  {
+                    id: "record", title: "Pupil record",
+                    intro: "The student details recorded by the school.",
+                    kind: "table", caption: child.full_name + " — " + childClass,
+                    columns: ["Item", "Detail"],
+                    rows: [
+                      ["Pupil", child.full_name || "Student"],
+                      ["Admission number", child.admission_number || "—"],
+                      ["Class", childClass],
+                      ["Academic session", (session && session.name) || "Not set"],
+                      ["Relationship", (parent.relationship_note || "Parent/guardian")]
+                    ],
+                    emptyMessage: "No pupil record is available yet."
+                  },
+                  {
+                    id: "attendance", title: "Attendance records",
+                    intro: "Attendance entries for your linked child.",
+                    kind: "table", caption: "Attendance for " + (child.full_name || "your child"),
+                    columns: ["Date", "Status", "Remark"],
+                    rows: attendance.map(function (a) { return [fmtDate(a.attendance_date), a.status || "—", a.note || ""]; }),
+                    emptyMessage: "No attendance has been recorded yet."
+                  },
+                  {
+                    id: "results", title: "Results and report card",
+                    intro: "Only results published by the school are shown here.",
+                    kind: "records", records: resultRows,
+                    emptyMessage: "No published results are available yet."
+                  },
+                  {
+                    id: "assignments", title: "Assignments and learning materials",
+                    intro: "Classwork and learning resources shared for your child's class.",
+                    kind: "records", records: workRecords,
+                    emptyMessage: "No assignments or published learning materials are available yet."
+                  },
+                  {
+                    id: "announcements", title: "Announcements and messages",
+                    intro: "Published school-wide, parent, and relevant class notices.",
+                    kind: "records",
+                    records: announcements.map(function (a) { return { title: a.title, meta: "Posted " + fmtDate(a.created_at), badge: null, body: a.body || "" }; }),
+                    emptyMessage: "There are no announcements at the moment."
+                  },
+                  {
+                    id: "fees", title: "Fees and payment status",
+                    intro: "Fee records entered by the school. Amounts are displayed in naira.",
+                    kind: "table", caption: "Fee records for " + (child.full_name || "your child"),
+                    columns: ["Description", "Amount", "Due date", "Status"],
+                    rows: fees.map(function (fee) { return [fee.fee_type || "School fee", money(Number(fee.amount_due_kobo || 0) / 100), fee.due_date ? fmtDate(fee.due_date) : "—", (fee.status || "—").toUpperCase()]; }),
+                    emptyMessage: "No fee records are available yet."
+                  }
+                ];
+
+                return {
+                  data: {
+                    role: "parent", roleLabel: "Parent Portal",
+                    person: { name: parent.full_name || "Parent", meta: (child.full_name || "Child") + " · Admission " + (child.admission_number || "Not assigned") },
+                    stats: [
+                      { label: "Attendance", value: attendancePct, hint: present + " of " + attendance.length + " entries marked", tone: "ok" },
+                      { label: "Days absent", value: String(attendance.filter(function (a) { return a.status === "absent"; }).length), hint: "Recorded absences" },
+                      { label: "Assignments", value: String(assignments.length), hint: "For linked child's class" },
+                      { label: "Fees due", value: money(fees.filter(function (fee) { return fee.status !== "paid"; }).reduce(function (sum, fee) { return sum + Number(fee.amount_due_kobo || 0) / 100; }, 0)), hint: fees.length + " fee records", tone: "alert" }
+                    ],
+                    panels: panels,
+                    metaTerm: term ? term.name : "",
+                    metaSession: (session && session.name) || ""
+                  },
+                  error: null
+                };
+              });
             });
-
-            panels.push({
-              id: "attendance",
-              title: "Attendance records",
-              intro: "Attendance is recorded daily by the class teacher.",
-              kind: "table",
-              caption: "Attendance for " + child.full_name,
-              columns: ["Date", "Subject", "Status", "Remark"],
-              rows: attendance.map(function (a) {
-                return [fmtDate(a.session_date), (a.subjects && a.subjects.name) || "—", a.status || "—", ""];
-              }),
-              emptyMessage: "No attendance has been recorded yet."
-            });
-
-            panels.push({
-              id: "results",
-              title: "Results and report card",
-              intro: "Marks are entered by the subject teacher and confirmed before release.",
-              kind: "results",
-              caption: "Published results for " + child.full_name,
-              note: "Results are shown only when the teacher has published them.",
-              subjects: allSubjects.map(function (s) { return s.name; }),
-              gradeKey: window.PORTAL_GRADE_KEY,
-              results: {},
-              emptyMessage: "No published results are available yet."
-            });
-
-            panels.push({
-              id: "assignments",
-              title: "Assignments and learning materials",
-              intro: "What your child has been set, and the materials used in class.",
-              kind: "records",
-              records: [],
-              emptyMessage: "No assignments have been set yet."
-            });
-
-            panels.push({
-              id: "announcements",
-              title: "Announcements and messages",
-              intro: "Notices from the school office and the class teacher.",
-              kind: "records",
-              records: announcements.map(function (a) {
-                return { title: a.title, meta: "Posted " + fmtDate(a.created_at), badge: null, body: a.body || "" };
-              }),
-              emptyMessage: "There are no announcements at the moment."
-            });
-
-            var totalFees = fees.reduce(function (sum, f) { return sum + Number(f.amount || 0); }, 0);
-            panels.push({
-              id: "fees",
-              title: "Fees, invoices and payment status",
-              intro: "Invoices raised for the term and the payments recorded against them.",
-              kind: "table",
-              caption: "Fee records for " + child.full_name,
-              columns: ["Invoice", "Description", "Amount", "Status"],
-              rows: fees.map(function (f, i) {
-                return ["FR-" + String(f.id).padStart(4, "0"), f.type + " (" + (term ? term.name : "") + ")", money(f.amount), (f.status || "").toUpperCase()];
-              }),
-              emptyMessage: "No fee records are available yet."
-            });
-
-            return {
-              data: {
-                role: "parent",
-                roleLabel: "Parent Portal",
-                person: { name: parent.full_name, meta: childMeta },
-                stats: [
-                  { label: "Attendance", value: pct, hint: present + " of " + attendance.length + " days marked", tone: "ok" },
-                  { label: "Days absent", value: String(attendance.length - present), hint: attendance.length ? "this term" : "—" },
-                  { label: "Assignments", value: "0 due", hint: "before Monday", tone: "warn" },
-                  { label: "Fees", value: money(totalFees), hint: fees.length ? fees.length + " invoices" : "no invoices", tone: "alert" }
-                ],
-                panels: panels,
-                metaTerm: term ? term.name : "",
-                metaSession: ""
-              },
-              error: null
-            };
           });
         });
       });
+    }).catch(function (err) {
+      return { data: null, error: { message: err && err.message ? err.message : "Could not load the parent dashboard." } };
     });
   };
 
