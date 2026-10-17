@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Student and staff account registration for Darel Hikmah International Academy.">
+<title>Portal Registration | Darel Hikmah International Academy</title>
+<link rel="icon" href="images/SCHOOL_LOGO.png">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+<link rel="stylesheet" href="portal.css">
+</head>
+<body class="portal-body">
+<a class="skip-link" href="#main-content">Skip to main content</a>
+<header class="site-header"><div class="navbar"><div class="container navbar__inner">
+<a class="brand" href="index.html"><span class="brand__logo"><img src="images/SCHOOL_LOGO.png" alt="" width="56" height="56"></span><span class="brand__text"><span class="brand__name">Darel Hikmah</span><span class="brand__name brand__name--full">International Academy</span><span class="brand__motto">Education for Positive Change</span></span></a>
+<a class="btn btn--primary btn--small" href="portal-login.html">Sign in</a>
+</div></div></header>
+<main id="main-content"><section class="section"><div class="container">
+<div class="section-heading"><p class="eyebrow">School Portal</p><h1>Request an account</h1><p>Student and staff registrations require approval by the school before access is enabled.</p></div>
+<div class="signin">
+<section class="signin__panel"><h2>Registration details</h2>
+<form id="portal-register-form">
+<div class="form-field"><label for="full-name">Full name</label><input class="form-control" id="full-name" name="fullName" autocomplete="name" maxlength="120" required></div>
+<div class="form-field"><label for="email">Email address</label><input class="form-control" id="email" name="email" type="email" autocomplete="email" maxlength="254" required></div>
+<div class="form-field"><label for="phone">Phone number (optional)</label><input class="form-control" id="phone" name="phone" type="tel" maxlength="30"></div>
+<div class="form-field"><label for="account-type">Account type</label><select class="form-control" id="account-type" name="accountType" required><option value="">Choose account type</option><option value="student">Student</option><option value="staff">Staff</option></select></div>
+<div class="form-field"><label for="password">Password (minimum 8 characters)</label><input class="form-control" id="password" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+<div class="form-field"><label for="confirm-password">Confirm password</label><input class="form-control" id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></div>
+<p id="register-result" role="status" aria-live="polite" hidden></p><button class="btn btn--primary" id="register-submit" type="submit">Submit registration</button>
+</form><p class="form-field__hint">Public registration does not offer administrator accounts. Contact school administration for help.</p></section>
+<aside class="signin__aside"><p class="eyebrow">Approval required</p><h2>Your account stays inactive</h2><p>Submitting this form requests an account. An authorised school administrator must approve it before you can sign in.</p></aside>
+</div><p class="text-center mt-2"><a href="portal-login.html">Already registered? Sign in</a></p>
+</div></section></main>
+<footer class="site-footer"><div class="container"><p>&copy; <span id="current-year"></span> Darel Hikmah International Academy. All rights reserved.</p></div></footer>
+<script src="js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/supabase-client.js"></script>
+<script>
+(function () {
+  var form = document.getElementById("portal-register-form");
+  var result = document.getElementById("register-result");
+  var submit = document.getElementById("register-submit");
+  function message(text) { result.textContent = text; result.hidden = false; }
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    var name = form.elements.fullName.value.trim();
+    var email = form.elements.email.value.trim().toLowerCase();
+    var phone = form.elements.phone.value.trim();
+    var type = form.elements.accountType.value;
+    var password = form.elements.password.value;
+    if (password !== form.elements.confirmPassword.value) { message("Passwords do not match."); return; }
+    if (!["student", "staff"].includes(type)) { message("Choose Student or Staff."); return; }
+    var client = window.SupabaseClient && window.SupabaseClient.getClient();
+    if (!client) { message("Registration is unavailable right now. Please contact school administration."); return; }
+    submit.disabled = true; submit.textContent = "Submitting…"; result.hidden = true;
+    try {
+      var response = await client.auth.signUp({ email: email, password: password, options: { data: { full_name: name, phone: phone || null, account_type: type } } });
+      if (response.error) throw response.error;
+      message("Registration submitted. Your account remains inactive until the school approves it. Check your email if confirmation is requested.");
+      form.reset();
+    } catch (error) {
+      message(error && error.message ? error.message : "Registration failed. Please try again or contact the school.");
+    } finally { submit.disabled = false; submit.textContent = "Submit registration"; }
+  });
+})();
+</script>
+</body></html>
