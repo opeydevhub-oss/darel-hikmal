@@ -1572,30 +1572,3 @@ html.no-motion main { transition: none; }
 .photo--empty .photo__label {
   display: flex;
 }
-
-
-/* Small status badge for the school portal navigation item. */
-.nav-coming-badge {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 0.35rem;
-  padding: 0.2rem 0.45rem;
-  border: 1px solid rgba(196, 154, 66, 0.45);
-  border-radius: 999px;
-  background: #fbf3df;
-  color: #775819;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.035em;
-  line-height: 1.25;
-  text-transform: uppercase;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-@media (max-width: 760px) {
-  .nav-coming-badge {
-    font-size: 0.58rem;
-    padding: 0.18rem 0.38rem;
-  }
-}
