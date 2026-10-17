@@ -215,7 +215,7 @@
       if (auth.error || !auth.data.user) { badge.textContent = "—"; return; }
       return client.from("profiles").select("role,is_active").eq("id", auth.data.user.id).maybeSingle().then(function (profile) {
         if (profile.error || !profile.data || profile.data.role !== "admin" || profile.data.is_active !== true) { badge.textContent = "—"; return; }
-        return client.from("profiles").select("id", { count: "exact", head: true }).in("role", ["pending_student", "pending_staff"]).eq("is_active", false).then(function (result) {
+        return client.from("profiles").select("id", { count: "exact", head: true }).in("role", ["pending_student", "pending_parent", "pending_staff"]).eq("is_active", false).then(function (result) {
           badge.textContent = result.error ? "—" : String(result.count || 0);
           badge.setAttribute("data-count", result.error ? "unknown" : String(result.count || 0));
           badge.setAttribute("aria-label", (result.error ? "Could not load" : String(result.count || 0)) + " pending registrations");
