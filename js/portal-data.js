@@ -154,77 +154,158 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
 
     return currentProfile().then(function (profRes) {
       if (profRes.error || !profRes.data) {
-        return {
-          data: null,
-          error: profRes.error || { message: "Your profile could not be found." }
-        };
+        return { data: null, error: profRes.error || { message: "Your profile could not be found." } };
       }
 
       return resolveStudent(client, profRes.data.id).then(function (stRes) {
-        if (stRes.error) {
-          return { data: null, error: stRes.error };
-        }
-
+        if (stRes.error) return { data: null, error: stRes.error };
         if (!stRes.data) {
-          return {
-            data: null,
-            error: {
-              message: "Your login is active, but your student record has not been created by the school yet."
-            }
-          };
+          return { data: null, error: { message: "Your login is active, but your student record has not been created by the school yet." } };
         }
 
         var student = stRes.data;
-        var fullName = student.full_name ||
-          [student.first_name, student.last_name].filter(Boolean).join(" ") ||
-          "Student";
+        var fullName = student.full_name || [student.first_name, student.last_name].filter(Boolean).join(" ") || "Student";
+        return currentTerm(client).then(function (termRes) {
+          if (termRes.error) return { data: null, error: termRes.error };
+          var term = termRes.data;
+          var enrolQuery = client.from("enrolments")
+            .select("id,class_id,student_id,session_id,status,classes(id,name,level,arm),academic_sessions(name)")
+            .eq("student_id", student.id)
+            .eq("status", "active");
+          if (term && term.session_id) enrolQuery = enrolQuery.eq("session_id", term.session_id);
 
-        return Promise.resolve({
-          data: {
-            role: "student",
-            roleLabel: "Student Portal",
-            person: {
-              name: fullName,
-              meta: "Admission " + (student.admission_number || "Not assigned")
-            },
-            stats: [
-              { label: "Attendance", value: "—", hint: "No attendance summary loaded" },
-              { label: "Subjects", value: "—", hint: "School records" },
-              { label: "Assignments", value: "—", hint: "School records" },
-              { label: "Fees", value: "—", hint: "School records" }
-            ],
-            panels: [
-              {
-                id: "record",
-                title: "My student record",
-                intro: "Your student details recorded by the school.",
-                kind: "table",
-                caption: "Student information",
-                columns: ["Item", "Detail"],
-                rows: [
-                  ["Name", fullName],
-                  ["Admission number", student.admission_number || "Not assigned"],
-                  ["Gender", student.gender || "Not recorded"],
-                  ["Status", student.status || "Not recorded"]
-                ],
-                emptyMessage: "No student information is available."
-              }
-            ],
-            metaTerm: "",
-            metaSession: ""
-          },
-          error: null
+          return enrolQuery.then(function (enrolRes) {
+            if (enrolRes.error) return { data: null, error: enrolRes.error };
+            var enrolments = enrolRes.data || [];
+            var enrolmentIds = enrolments.map(function (e) { return e.id; });
+            var classIds = enrolments.map(function (e) { return e.class_id; }).filter(Boolean);
+            var classInfo = enrolments.length ? enrolments[0].classes : null;
+
+            var requests = [
+              enrolmentIds.length
+                ? client.from("attendance").select("attendance_date,status,note,enrolment_id").in("enrolment_id", enrolmentIds).order("attendance_date", { ascending: false })
+                : Promise.resolve({ data: [], error: null }),
+              client.from("fee_records").select("id,fee_type,amount_due_kobo,status,due_date,term_id").eq("student_id", student.id),
+              enrolmentIds.length
+                ? client.from("results").select("id,enrolment_id,subject_id,ca_score,exam_score,total,grade,status,published_at,subject:subjects(name)").in("enrolment_id", enrolmentIds).eq("status", "published")
+                : Promise.resolve({ data: [], error: null }),
+              classIds.length
+                ? client.from("assignments").select("id,title,description,due_date,class_id,subject:subjects(name)").in("class_id", classIds).order("due_date", { ascending: true })
+                : Promise.resolve({ data: [], error: null }),
+              classIds.length
+                ? client.from("learning_materials").select("id,title,created_at,class_id,subject:subjects(name)").in("class_id", classIds).eq("status", "published").order("created_at", { ascending: false })
+                : Promise.resolve({ data: [], error: null }),
+              client.from("announcements").select("id,title,body,created_at,audience,class_id,publish_at,expires_at,status").eq("status", "published").or("publish_at.is.null,publish_at.lte." + new Date().toISOString()).or("expires_at.is.null,expires_at.gt." + new Date().toISOString()).order("created_at", { ascending: false }),
+              client.from("academic_sessions").select("name").eq("is_current", true).maybeSingle()
+            ];
+
+            return Promise.all(requests).then(function (r) {
+              var failed = r.find(function (item) { return item && item.error; });
+              if (failed) return { data: null, error: { message: failed.error.message || "Could not load student dashboard information." } };
+
+              var attendance = r[0].data || [];
+              var fees = r[1].data || [];
+              var results = r[2].data || [];
+              var assignments = r[3].data || [];
+              var materials = r[4].data || [];
+              var announcements = (r[5].data || []).filter(function (a) {
+                return a.audience === "all" || a.audience === "students" ||
+                  (a.audience === "class" && classIds.indexOf(a.class_id) !== -1);
+              });
+              var session = r[6].data;
+              var present = attendance.filter(function (a) { return a.status === "present"; }).length;
+              var pct = attendance.length ? Math.round(present / attendance.length * 100) + "%" : "—";
+              var feeOutstanding = fees.filter(function (f) { return f.status !== "paid" && f.status !== "waived"; })
+                .reduce(function (sum, f) { return sum + Number(f.amount_due_kobo || 0) / 100; }, 0);
+              var classLabel = classInfo ? classInfo.name + (classInfo.level ? " (" + classInfo.level + ")" : "") : "Not yet allocated";
+              var resultRecords = results.map(function (result) {
+                return {
+                  title: result.subject && result.subject.name ? result.subject.name : "Subject result",
+                  meta: "Score: " + (result.total == null ? "Not recorded" : result.total) + (result.grade ? " · Grade " + result.grade : ""),
+                  badge: "Published",
+                  body: result.published_at ? "Published " + fmtDate(result.published_at) : "Published result"
+                };
+              });
+              var workRecords = assignments.map(function (a) {
+                return { title: a.title, meta: (a.subject && a.subject.name ? a.subject.name + " · " : "") + (a.due_date ? "Due " + fmtDate(a.due_date) : "No due date"), badge: "Assignment", body: a.description || "" };
+              }).concat(materials.map(function (m) {
+                return { title: m.title, meta: (m.subject && m.subject.name ? m.subject.name + " · " : "") + "Learning material", badge: "Material", body: "" };
+              }));
+
+              return {
+                data: {
+                  role: "student",
+                  roleLabel: "Student Portal",
+                  person: { name: fullName, meta: "Admission " + (student.admission_number || "Not assigned") + " · " + classLabel },
+                  stats: [
+                    { label: "Attendance", value: pct, hint: present + " of " + attendance.length + " entries marked", tone: "ok" },
+                    { label: "Subjects", value: String(new Set(enrolments.map(function (e) { return e.class_id; })).size ? "—" : "—"), hint: "Published subject records" },
+                    { label: "Assignments", value: String(assignments.length), hint: "For your class" },
+                    { label: "Fees outstanding", value: money(feeOutstanding), hint: fees.length + " fee records", tone: "alert" }
+                  ],
+                  panels: [
+                    {
+                      id: "record", title: "My student record",
+                      intro: "Your student details recorded by the school.",
+                      kind: "table", caption: "Student information",
+                      columns: ["Item", "Detail"],
+                      rows: [
+                        ["Name", fullName],
+                        ["Admission number", student.admission_number || "Not assigned"],
+                        ["Class", classLabel],
+                        ["Academic session", (session && session.name) || "Not set"],
+                        ["Gender", student.gender || "Not recorded"],
+                        ["Status", student.status || "Not recorded"]
+                      ],
+                      emptyMessage: "No student information is available."
+                    },
+                    {
+                      id: "attendance", title: "My attendance",
+                      intro: "Attendance recorded for your enrolments.",
+                      kind: "table", caption: "Attendance history",
+                      columns: ["Date", "Status", "Remark"],
+                      rows: attendance.map(function (a) { return [fmtDate(a.attendance_date), a.status || "—", a.note || ""]; }),
+                      emptyMessage: "No attendance has been recorded yet."
+                    },
+                    {
+                      id: "results", title: "Results and report card",
+                      intro: "Only results published by the school are shown here.",
+                      kind: "records", records: resultRecords,
+                      emptyMessage: "No published results are available yet."
+                    },
+                    {
+                      id: "assignments", title: "Assignments and learning materials",
+                      intro: "Work and resources shared for your class.",
+                      kind: "records", records: workRecords,
+                      emptyMessage: "No assignments or published learning materials are available yet."
+                    },
+                    {
+                      id: "announcements", title: "School announcements",
+                      intro: "Published school-wide and relevant class notices.",
+                      kind: "records",
+                      records: announcements.map(function (a) { return { title: a.title, meta: "Posted " + fmtDate(a.created_at), badge: null, body: a.body || "" }; }),
+                      emptyMessage: "There are no announcements at the moment."
+                    },
+                    {
+                      id: "fees", title: "Fees and payment status",
+                      intro: "Fee records entered by the school. Amounts are displayed in naira.",
+                      kind: "table", caption: "My fee records",
+                      columns: ["Description", "Amount", "Due date", "Status"],
+                      rows: fees.map(function (fee) { return [fee.fee_type || "School fee", money(Number(fee.amount_due_kobo || 0) / 100), fee.due_date ? fmtDate(fee.due_date) : "—", (fee.status || "—").toUpperCase()]; }),
+                      emptyMessage: "No fee records are available yet."
+                    }
+                  ],
+                  metaTerm: term ? term.name : "",
+                  metaSession: (session && session.name) || ""
+                },
+                error: null
+              };
+            });
+          });
         });
       });
     }).catch(function (err) {
-      return {
-        data: null,
-        error: {
-          message: err && err.message
-            ? err.message
-            : "Could not load the student dashboard."
-        }
-      };
+      return { data: null, error: { message: err && err.message ? err.message : "Could not load the student dashboard." } };
     });
   };
 
