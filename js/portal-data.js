@@ -105,14 +105,14 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
   /* Resolve the logged-in parent row + their children. */
   function resolveParent(client, profileId) {
     return client.from("parents")
-      .select("id,profile_id,full_name,phone,email,relationship,created_at")
+      .select("id,profile_id,full_name,phone,relationship_note,status,created_at")
       .eq("profile_id", profileId)
       .maybeSingle();
   }
 
   function parentChildren(client, parentId) {
     return client.from("parent_students")
-      .select("id,student:students!inner(id,admission_number,full_name,current_class_id,enrolled_session_id)")
+      .select("id,relationship,student:students!inner(id,admission_no,first_name,last_name,gender,status)")
       .eq("parent_id", parentId);
   }
 
@@ -239,7 +239,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                   person: { name: fullName, meta: "Admission " + (student.admission_number || "Not assigned") + " · " + classLabel },
                   stats: [
                     { label: "Attendance", value: pct, hint: present + " of " + attendance.length + " entries marked", tone: "ok" },
-                    { label: "Subjects", value: String(new Set(enrolments.map(function (e) { return e.class_id; })).size ? "—" : "—"), hint: "Published subject records" },
+                    { label: "Subjects", value: String(new Set(results.map(function (result) { return result.subject_id; }).concat(assignments.map(function (assignment) { return assignment.subject_id; })).filter(Boolean)).size), hint: "Subjects with records" },
                     { label: "Assignments", value: String(assignments.length), hint: "For your class" },
                     { label: "Fees outstanding", value: money(feeOutstanding), hint: fees.length + " fee records", tone: "alert" }
                   ],
