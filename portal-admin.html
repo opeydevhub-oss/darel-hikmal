@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/responsive.css">
   <link rel="stylesheet" href="portal.css">
+<style>.pending-count{display:inline-flex;align-items:center;justify-content:center;min-width:1.65rem;height:1.65rem;margin-left:.35rem;padding:0 .35rem;border-radius:999px;background:#fff;color:#a20d2b;font-size:.85em;font-weight:800;line-height:1}.pending-count[data-count="0"]{background:rgba(255,255,255,.2);color:inherit}</style>
 </head>
 <body class="portal-body">
   <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -83,7 +84,7 @@
               <span class="eyebrow">School Administration</span>
               <h1 id="dashboard-title">Administrator Portal</h1>
               <p>Manage school records, admissions, fees and announcements.</p>
-              <div class="btn-row mt-1"><a class="btn btn--primary" href="portal-approvals.html">Review registrations &amp; manage administrators</a></div>
+              <div class="btn-row mt-1"><a class="btn btn--primary" href="portal-approvals.html">Review registrations <span id="pending-registration-count" class="pending-count" aria-label="Pending registrations">…</span> &amp; manage administrators</a></div>
               <p class="muted">Current academic period: <span data-dash-term>Loading…</span></p>
             </div>
           </div>
@@ -203,5 +204,26 @@
   <script src="js/portal-session.js"></script>
   <script src="js/portal-data.js"></script>
   <script src="js/portal.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var badge = document.getElementById("pending-registration-count");
+    if (!badge) return;
+    var client = window.SupabaseClient && window.SupabaseClient.getClient();
+    if (!client) { badge.textContent = "—"; return; }
+    client.auth.getUser().then(function (auth) {
+      if (auth.error || !auth.data.user) { badge.textContent = "—"; return; }
+      return client.from("profiles").select("role,is_active").eq("id", auth.data.user.id).maybeSingle().then(function (profile) {
+        if (profile.error || !profile.data || profile.data.role !== "admin" || profile.data.is_active !== true) { badge.textContent = "—"; return; }
+        return client.from("profiles").select("id", { count: "exact", head: true }).in("role", ["pending_student", "pending_staff"]).eq("is_active", false).then(function (result) {
+          badge.textContent = result.error ? "—" : String(result.count || 0);
+          badge.setAttribute("data-count", result.error ? "unknown" : String(result.count || 0));
+          badge.setAttribute("aria-label", (result.error ? "Could not load" : String(result.count || 0)) + " pending registrations");
+        });
+      });
+    }).catch(function () { badge.textContent = "—"; });
+  })();
+  </script>
+
 </body>
               </html>ml>
