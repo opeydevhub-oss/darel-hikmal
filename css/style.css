@@ -1572,3 +1572,55 @@ html.no-motion main { transition: none; }
 .photo--empty .photo__label {
   display: flex;
 }
+
+
+/* ---------- Subtle floating education motifs on inner-page banners ---------- */
+/* Decorative only: keep the text and controls fully readable and interactive. */
+.page-hero {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.page-hero::before,
+.page-hero::after {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+  color: var(--gold-200);
+  opacity: 0.2;
+  animation: page-motif-drift 8s ease-in-out infinite alternate;
+}
+
+.page-hero::before {
+  content: "✎";
+  font-family: Georgia, serif;
+  font-size: clamp(2.8rem, 5vw, 4.6rem);
+  right: 11%;
+  top: 17%;
+  transform-origin: center;
+}
+
+.page-hero::after {
+  content: "✦";
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  right: 6%;
+  bottom: 17%;
+  animation-delay: -3.5s;
+}
+
+@keyframes page-motif-drift {
+  from { translate: 0 -7px; rotate: -5deg; }
+  to { translate: 0 9px; rotate: 5deg; }
+}
+
+@media (max-width: 600px) {
+  .page-hero::before { right: 5%; top: 12%; font-size: 2.5rem; opacity: 0.14; }
+  .page-hero::after { right: 7%; bottom: 12%; font-size: 1.6rem; opacity: 0.15; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-hero::before,
+  .page-hero::after { animation: none; }
+}
