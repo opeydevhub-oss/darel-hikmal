@@ -517,7 +517,7 @@ var PortalDashboard = {
 
     function renderRows() {
       body.innerHTML = currentRows.map(function (row, i) {
-        return "<tr data-student=\"" + row.id + "\">" +
+        return "<tr data-student=\"" + portalEscape(row.id) + "\">" +
           "<td>" + portalEscape(row.admission_number || row.ref || i + 1) + "</td>" +
           "<td>" + portalEscape(row.full_name || row.name || "") + "</td>" +
           "<td><select class=\"filter-input\" data-att-status>" +
