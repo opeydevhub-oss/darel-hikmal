@@ -1574,8 +1574,41 @@ html.no-motion main { transition: none; }
 }
 
 
-/* ---------- Subtle floating education motifs on inner-page banners ---------- */
-/* Decorative only: keep the text and controls fully readable and interactive. */
+/* ---------- Visible floating education motifs across every page ---------- */
+/* Fixed decorative symbols travel diagonally across the viewport. They never
+   intercept taps/clicks and remain visible on phones as well as desktops. */
+body::before,
+body::after {
+  content: "✦";
+  position: fixed;
+  z-index: 80;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  color: var(--gold-500);
+  opacity: 0.58;
+  font-size: clamp(1.7rem, 3.2vw, 2.8rem);
+  line-height: 1;
+  text-shadow: 0 1px 5px rgba(8, 23, 58, 0.12);
+  animation: site-motif-travel 7s ease-in-out infinite alternate;
+}
+
+body::before {
+  content: "✎";
+  left: 2.5%;
+  top: 24%;
+  animation-duration: 8s;
+}
+
+body::after {
+  content: "✧";
+  right: 3%;
+  top: 62%;
+  animation-delay: -3.2s;
+  animation-duration: 6.5s;
+  color: var(--red-600);
+}
+
 .page-hero {
   isolation: isolate;
   overflow: hidden;
@@ -1589,38 +1622,50 @@ html.no-motion main { transition: none; }
   user-select: none;
   line-height: 1;
   color: var(--gold-200);
-  opacity: 0.2;
-  animation: page-motif-drift 8s ease-in-out infinite alternate;
+  opacity: 0.48;
+  animation: page-motif-travel 5.5s ease-in-out infinite alternate;
 }
 
 .page-hero::before {
   content: "✎";
   font-family: Georgia, serif;
   font-size: clamp(2.8rem, 5vw, 4.6rem);
-  right: 11%;
-  top: 17%;
-  transform-origin: center;
+  right: 15%;
+  top: 12%;
 }
 
 .page-hero::after {
   content: "✦";
-  font-size: clamp(1.8rem, 3vw, 2.8rem);
-  right: 6%;
-  bottom: 17%;
-  animation-delay: -3.5s;
+  font-size: clamp(2rem, 3vw, 3rem);
+  right: 5%;
+  bottom: 12%;
+  animation-delay: -2.5s;
 }
 
-@keyframes page-motif-drift {
-  from { translate: 0 -7px; rotate: -5deg; }
-  to { translate: 0 9px; rotate: 5deg; }
+@keyframes site-motif-travel {
+  0% { transform: translate(-8px, -14px) rotate(-12deg); }
+  25% { transform: translate(22px, 10px) rotate(5deg); }
+  50% { transform: translate(4px, 28px) rotate(14deg); }
+  75% { transform: translate(-18px, 8px) rotate(-5deg); }
+  100% { transform: translate(15px, -18px) rotate(10deg); }
+}
+
+@keyframes page-motif-travel {
+  0% { transform: translate(-18px, -12px) rotate(-10deg); }
+  50% { transform: translate(14px, 20px) rotate(8deg); }
+  100% { transform: translate(-10px, -18px) rotate(14deg); }
 }
 
 @media (max-width: 600px) {
-  .page-hero::before { right: 5%; top: 12%; font-size: 2.5rem; opacity: 0.14; }
-  .page-hero::after { right: 7%; bottom: 12%; font-size: 1.6rem; opacity: 0.15; }
+  body::before { left: 1%; top: 28%; font-size: 1.8rem; opacity: 0.52; }
+  body::after { right: 1%; top: 68%; font-size: 1.7rem; opacity: 0.52; }
+  .page-hero::before { right: 17%; top: 8%; font-size: 2.4rem; opacity: 0.42; }
+  .page-hero::after { right: 4%; bottom: 8%; font-size: 1.8rem; opacity: 0.42; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  body::before,
+  body::after,
   .page-hero::before,
   .page-hero::after { animation: none; }
 }
