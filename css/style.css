@@ -743,6 +743,21 @@ hr {
   }
 }
 
+
+/* Gallery images should be visible even before placeholder detection runs. */
+.gallery-grid .gallery-item .photo img,
+.gallery-preview .gallery-item .photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-grid .gallery-item .photo__label,
+.gallery-preview .gallery-item .photo__label {
+  display: none;
+}
+
 /* ---------- Check lists ---------- */
 .list-check li {
   position: relative;
