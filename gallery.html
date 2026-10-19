@@ -71,7 +71,6 @@
           <p class="lead">Browse the photos below to explore life at the academy.</p>
         </div>
         <div class="grid grid--three gallery-grid">
-          <figure class="gallery-item"><div class="photo photo--wide"><img src="images/SCHOOL_HERO_PHOTO.jpg" alt="School building and learning environment" loading="lazy"></div></figure>
           <figure class="gallery-item"><div class="photo photo--wide"><img src="images/TEACHERS_AND_STUDENTS_PHOTO.jpg" alt="Teachers and students at the academy" loading="lazy"></div></figure>
           <figure class="gallery-item"><div class="photo photo--wide"><img src="images/CLASSROOM_PHOTO.jpg" alt="Classroom learning" loading="lazy"></div></figure>
           <figure class="gallery-item"><div class="photo photo--wide"><img src="images/ICT_ROOM_PHOTO.jpg" alt="ICT learning facilities" loading="lazy"></div></figure>
@@ -172,22 +171,82 @@
   <button class="to-top" type="button" aria-label="Back to top of page">&uarr;</button>
 
   <script src="js/main.js"></script>
+  <style>
+    .gallery-item img { cursor: zoom-in; }
+    .gallery-lightbox {
+      position: fixed; inset: 0; z-index: 9999; display: none;
+      align-items: center; justify-content: center; padding: 1.25rem;
+      background: rgba(10, 18, 14, .92);
+    }
+    .gallery-lightbox.is-open { display: flex; }
+    .gallery-lightbox__image {
+      display: block; max-width: min(96vw, 1400px); max-height: 88vh;
+      width: auto; height: auto; object-fit: contain; border-radius: 8px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    }
+    .gallery-lightbox__close {
+      position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px;
+      border: 0; border-radius: 50%; background: #fff; color: #173d2c;
+      font-size: 1.8rem; line-height: 1; cursor: pointer;
+    }
+    .gallery-lightbox__caption {
+      position: absolute; left: 1rem; right: 1rem; bottom: .75rem;
+      color: #fff; text-align: center; font-size: .95rem;
+    }
+    body.gallery-lightbox-open { overflow: hidden; }
+  </style>
+  <div class="gallery-lightbox" id="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Enlarged gallery photo">
+    <button class="gallery-lightbox__close" type="button" aria-label="Close enlarged photo">&times;</button>
+    <img class="gallery-lightbox__image" alt="">
+    <p class="gallery-lightbox__caption"></p>
+  </div>
   <script>
-    document.querySelectorAll(".gallery-item img").forEach(function (img) {
-      img.addEventListener("click", function () {
-        if (img.dataset.zoomed === "true") {
-          img.style.transform = "";
-          img.style.cursor = "zoom-in";
-          img.dataset.zoomed = "false";
-        } else {
-          img.style.transform = "scale(1.5)";
-          img.style.cursor = "zoom-out";
-          img.dataset.zoomed = "true";
+    (function () {
+      var lightbox = document.getElementById("gallery-lightbox");
+      var enlarged = lightbox.querySelector(".gallery-lightbox__image");
+      var caption = lightbox.querySelector(".gallery-lightbox__caption");
+      var closeButton = lightbox.querySelector(".gallery-lightbox__close");
+      var lastFocused = null;
+
+      function closeLightbox() {
+        lightbox.classList.remove("is-open");
+        document.body.classList.remove("gallery-lightbox-open");
+        enlarged.removeAttribute("src");
+        if (lastFocused) lastFocused.focus();
+      }
+
+      document.querySelectorAll(".gallery-item img").forEach(function (img) {
+        img.tabIndex = 0;
+        img.setAttribute("role", "button");
+        img.setAttribute("aria-label", "Enlarge photo: " + (img.alt || "School gallery photo"));
+
+        function openLightbox() {
+          lastFocused = img;
+          enlarged.src = img.currentSrc || img.src;
+          enlarged.alt = img.alt || "School gallery photo";
+          caption.textContent = img.alt || "";
+          lightbox.classList.add("is-open");
+          document.body.classList.add("gallery-lightbox-open");
+          closeButton.focus();
         }
+
+        img.addEventListener("click", openLightbox);
+        img.addEventListener("keydown", function (event) {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openLightbox();
+          }
+        });
       });
-      img.style.cursor = "zoom-in";
-      img.style.transition = "transform .2s ease";
-    });
+
+      closeButton.addEventListener("click", closeLightbox);
+      lightbox.addEventListener("click", function (event) {
+        if (event.target === lightbox) closeLightbox();
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && lightbox.classList.contains("is-open")) closeLightbox();
+      });
+    }());
   </script>
 </body>
 </html>
