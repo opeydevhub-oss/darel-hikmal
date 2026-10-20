@@ -2261,3 +2261,39 @@ p { max-width: 72ch; }
     transition: none !important;
   }
 }
+
+
+/* Printable school enquiry/admission form */
+.form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem 1.25rem; }
+.form-row--full { grid-column:1 / -1; }
+.print-form-heading { display:flex; align-items:center; gap:1rem; padding-bottom:1.25rem; margin-bottom:1.25rem; border-bottom:2px solid var(--gold-500); }
+.print-form-heading img { flex:0 0 72px; object-fit:contain; }
+.print-form-heading h2 { margin:0; font-size:clamp(1rem,2.4vw,1.5rem); color:var(--navy-800); }
+.print-form-heading p { margin:.15rem 0 0; }
+.printable-form > h3 { margin:0 0 .5rem; }
+.form-signatures { display:grid; grid-template-columns:2fr 1fr; gap:2rem; margin:2rem 0 1.5rem; }
+.form-signatures div { display:flex; flex-direction:column; gap:.5rem; }
+.form-signatures i { display:block; min-height:2rem; border-bottom:1px solid var(--ink); }
+@media(max-width:600px) {
+  .form-grid { grid-template-columns:minmax(0,1fr); }
+  .form-row--full { grid-column:auto; }
+  .print-form-heading { align-items:flex-start; }
+  .print-form-heading img { flex-basis:56px; width:56px; height:56px; }
+}
+@media print {
+  body.print-school-form * { visibility:hidden !important; }
+  body.print-school-form #printable-school-form,
+  body.print-school-form #printable-school-form * { visibility:visible !important; }
+  body.print-school-form #printable-school-form { position:absolute; inset:0 auto auto 0; width:100%; padding:0; margin:0; background:#fff !important; }
+  body.print-school-form #printable-school-form .container { width:100%; max-width:none; padding:0; }
+  body.print-school-form #printable-school-form .section__head,
+  body.print-school-form #printable-school-form .no-print { display:none !important; }
+  body.print-school-form #printable-school-form .form-card { border:0; box-shadow:none; padding:0; margin:0; }
+  body.print-school-form #printable-school-form input,
+  body.print-school-form #printable-school-form select,
+  body.print-school-form #printable-school-form textarea { color:#111; background:#fff; border:1px solid #777; box-shadow:none; }
+  body.print-school-form #printable-school-form .form-row { break-inside:avoid; }
+  body.print-school-form #printable-school-form .print-form-heading h2 { font-size:16pt; }
+  body.print-school-form #printable-school-form .print-form-heading p { font-size:9pt; }
+  @page { size:A4; margin:14mm; }
+}
