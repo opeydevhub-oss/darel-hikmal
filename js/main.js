@@ -17,6 +17,23 @@ var WHATSAPP_NUMBER = "2348058519527";
 
 var REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+/* Welcome intro: short, branded, and removed promptly so it never delays browsing. */
+function setUpWelcomeIntro() {
+  var screen = document.getElementById("welcome-screen");
+  if (!screen) return;
+
+  function dismiss() {
+    screen.classList.add("is-leaving");
+    window.setTimeout(function () {
+      if (screen.parentNode) screen.parentNode.removeChild(screen);
+    }, REDUCED_MOTION.matches ? 0 : 460);
+  }
+
+  // Keep the intro brief; never wait for the school's photos to finish loading.
+  window.setTimeout(dismiss, REDUCED_MOTION.matches ? 350 : 1550);
+  screen.addEventListener("click", dismiss, { once: true });
+}
+
 /* 1. Mobile navigation menu ------------------------------------------- */
 function setUpMobileNav() {
   var toggleButton = document.querySelector(".nav-toggle");
@@ -659,6 +676,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.documentElement.classList.add("no-motion");
   }
 
+  setUpWelcomeIntro();
   setUpMobileNav();
   setUpScrollTools();
   setUpImagePlaceholders();
