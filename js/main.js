@@ -390,33 +390,32 @@ function setUpHeroDepth() {
    heading is simply normal text. */
 function setUpHeroHeading() {
   var heading = document.querySelector(".hero__text h1");
+  if (!heading || !heading.textContent.trim() || REDUCED_MOTION.matches) return;
 
-  if (!heading || REDUCED_MOTION.matches || !heading.textContent.trim()) {
-    return;
-  }
-
-  var words = heading.textContent.trim().split(/\s+/);
-
+  var fullText = heading.textContent.replace(/\\s+/g, " ").trim();
+  heading.setAttribute("aria-label", fullText);
   heading.textContent = "";
+  var text = document.createElement("span");
+  var cursor = document.createElement("span");
+  cursor.className = "typing-cursor";
+  cursor.setAttribute("aria-hidden", "true");
+  text.setAttribute("aria-hidden", "true");
+  heading.appendChild(text);
+  heading.appendChild(cursor);
 
-  words.forEach(function (word, index) {
-    var mask = document.createElement("span");
-    var inner = document.createElement("span");
-
-    mask.className = "word";
-    inner.className = "word__inner";
-    inner.style.setProperty("--word-delay", 0.25 + index * 0.07 + "s");
-    inner.textContent = word;
-
-    mask.appendChild(inner);
-    heading.appendChild(mask);
-
-    if (index < words.length - 1) {
-      heading.appendChild(document.createTextNode(" "));
+  var index = 0;
+  var delay = 42;
+  function typeNext() {
+    if (index >= fullText.length) {
+      cursor.remove();
+      heading.setAttribute("aria-label", fullText);
+      return;
     }
-  });
-
-  heading.classList.add("is-splitting");
+    text.textContent += fullText.charAt(index);
+    index += 1;
+    window.setTimeout(typeNext, delay);
+  }
+  window.setTimeout(typeNext, 350);
 }
 
 /* 11. Gold line under section headings -------------------------------
