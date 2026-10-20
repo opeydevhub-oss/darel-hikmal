@@ -170,6 +170,30 @@ function setUpReveal() {
   });
 }
 
+/* Automatic typing effect for selected hero and page-intro text. */
+function setUpTyping() {
+  if (REDUCED_MOTION.matches) return;
+  var candidates = document.querySelectorAll(".hero__motto, .page-hero .eyebrow");
+  Array.prototype.forEach.call(candidates, function (el) {
+    if (!el.textContent.trim() || el.dataset.typingReady === "true") return;
+    var fullText = el.textContent.trim();
+    el.dataset.typingReady = "true";
+    el.setAttribute("aria-label", fullText);
+    el.textContent = "";
+    el.classList.add("typing-text");
+    var i = 0;
+    function typeNext() {
+      if (i < fullText.length) {
+        el.textContent += fullText.charAt(i++);
+        window.setTimeout(typeNext, 48);
+      } else {
+        el.classList.remove("typing-text");
+      }
+    }
+    window.setTimeout(typeNext, 280);
+  });
+}
+
 /* 5. Portal tabs ------------------------------------------------------ */
 function setUpPortalTabs() {
   var tabGroups = document.querySelectorAll("[data-portal-tabs]");
@@ -639,6 +663,7 @@ document.addEventListener("DOMContentLoaded", function () {
   setUpScrollTools();
   setUpImagePlaceholders();
   setUpReveal();
+  setUpTyping();
   setUpPortalTabs();
   setUpAdmissionForm();
   setUpFooterYear();
