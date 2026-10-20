@@ -896,7 +896,7 @@ p {
 }
 .reveal--left { transform: translate3d(-22px, 0, 0); }
 .reveal--right { transform: translate3d(22px, 0, 0); }
-.reveal.is-visible, .reveal--left.is-visible, .reveal--right.is-visible {
+.reveal.is-revealed, .reveal--left.is-revealed, .reveal--right.is-revealed {
   opacity: 1;
   transform: none;
 }
