@@ -670,6 +670,23 @@ function setUpPageTransition() {
   });
 }
 
+/* Printable school enquiry form -------------------------------------- */
+function setUpPrintableSchoolForm() {
+  var printButton = document.getElementById("print-school-form");
+  var form = document.getElementById("school-enquiry-form");
+  if (!printButton || !form) return;
+
+  printButton.addEventListener("click", function () {
+    if (!form.reportValidity()) return;
+    document.body.classList.add("print-school-form");
+    window.print();
+  });
+
+  window.addEventListener("afterprint", function () {
+    document.body.classList.remove("print-school-form");
+  });
+}
+
 /* Start everything when the page is ready ---------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
   if (REDUCED_MOTION.matches) {
@@ -677,6 +694,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   setUpWelcomeIntro();
+  setUpPrintableSchoolForm();
   setUpMobileNav();
   setUpScrollTools();
   setUpImagePlaceholders();
