@@ -1889,8 +1889,8 @@ a:hover { color: var(--red-700); }
 .page-hero {
   overflow: hidden;
   background:
-    radial-gradient(circle at 88% 18%, rgba(198, 164, 91, .16), transparent 22rem),
-    linear-gradient(125deg, #08173a 0%, #0e5a42 62%, #17674d 100%);
+    radial-gradient(circle at 88% 18%, rgba(201, 162, 39, .16), transparent 22rem),
+    linear-gradient(125deg, #08173a 0%, #0c2350 62%, #123066 100%);
   padding: clamp(2.6rem, 5vw, 4.2rem) 0;
 }
 .page-hero::after {
@@ -2040,8 +2040,8 @@ table.data td, table.data th { padding: .9rem 1rem; }
 /* Admissions callout and contact panels */
 .cta-band {
   background:
-    radial-gradient(circle at 90% 20%, rgba(225,196,131,.18), transparent 20rem),
-    linear-gradient(120deg, #083d30, #0d6047);
+    radial-gradient(circle at 90% 20%, rgba(201, 162, 39,.18), transparent 20rem),
+    linear-gradient(120deg, #0c2350, #123066);
   color: #fff;
 }
 .cta-band h2 { color: #fff; }
@@ -2062,12 +2062,12 @@ table.data td, table.data th { padding: .9rem 1rem; }
 
 /* Footer */
 .site-footer {
-  background: linear-gradient(145deg, #062f26 0%, #083e30 100%);
-  color: #d3e0d8;
+  background: linear-gradient(145deg, #08173a 0%, #0c2350 100%);
+  color: #eef2fa;
   padding-top: 4rem;
 }
 .site-footer h2, .site-footer h3 { color: #fff; letter-spacing: .14em; }
-.site-footer a { color: #e7efe9; border-bottom-color: rgba(231,239,233,.2); }
+.site-footer a { color: #f0e3b8; border-bottom-color: rgba(231,239,233,.2); }
 .site-footer a:hover { color: #e7cc8e; border-bottom-color: #e7cc8e; }
 .footer-brand .brand__motto { color: #e7cc8e; }
 .footer-contact__label { color: #a8c2b4; }
