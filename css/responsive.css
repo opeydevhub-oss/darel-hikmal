@@ -1160,3 +1160,25 @@ p {
     transform: none;
   }
 }
+
+
+/* Premium layout polish across small screens */
+@media (max-width: 767px) {
+  .section { padding-block: 3.25rem; }
+  .section__head { margin-bottom: 1.6rem; }
+  .hero, .page-hero { padding-block: 2.4rem 2.8rem; }
+  .hero__inner { gap: 1.75rem; }
+  .hero__text { max-width: 38rem; }
+  .btn-row { gap: .75rem; }
+  .btn-row .btn { width: 100%; }
+  .card, .form-card, .mission, .contact-card, .policy-card, .policy-section { border-radius: 14px; }
+  .footer-grid { gap: 2rem; }
+  .site-header { position: sticky; top: 0; }
+}
+@media (min-width: 768px) {
+  .hero__inner { gap: clamp(2rem, 5vw, 5rem); }
+  .grid--two, .split { gap: clamp(1.5rem, 3vw, 2.75rem); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal--left, .reveal--right { opacity: 1 !important; transform: none !important; }
+}
