@@ -1720,21 +1720,21 @@ body::after {
 /* ================================================================
    PREMIUM VISUAL SYSTEM
    Darel Hikmah International Academy
-   Emerald, warm ivory and soft gold; shared across every page.
+   Official logo palette: navy, red and gold only.
    ================================================================ */
 :root {
-  --navy-900: #083b30;
-  --navy-800: #0b4a3a;
-  --navy-700: #12624b;
-  --navy-600: #1a7658;
-  --navy-050: #edf5ef;
-  --red-600: #b18a3b;
-  --red-700: #8e6c2a;
-  --gold-500: #c5a15a;
-  --gold-700: #85662b;
-  --gold-200: #eee2c5;
-  --ink: #24332e;
-  --ink-soft: #52635c;
+  --navy-900: #08173a;
+  --navy-800: #0c2350;
+  --navy-700: #123066;
+  --navy-600: #1a3f7d;
+  --navy-050: #eef2fa;
+  --red-600: #c8102e;
+  --red-700: #a30c25;
+  --gold-500: #c9a227;
+  --gold-700: #8a6d12;
+  --gold-200: #f0e3b8;
+  --ink: #1b2230;
+  --ink-soft: #4b5668;
   --ink-muted: #77857e;
   --line: #e2e8df;
   --bg: #fffefa;
@@ -1890,7 +1890,7 @@ a:hover { color: var(--red-700); }
   overflow: hidden;
   background:
     radial-gradient(circle at 88% 18%, rgba(198, 164, 91, .16), transparent 22rem),
-    linear-gradient(125deg, #073b2f 0%, #0e5a42 62%, #17674d 100%);
+    linear-gradient(125deg, #08173a 0%, #0e5a42 62%, #17674d 100%);
   padding: clamp(2.6rem, 5vw, 4.2rem) 0;
 }
 .page-hero::after {
@@ -1977,8 +1977,8 @@ a:hover { color: var(--red-700); }
 .contact-grid { gap: 1.2rem; }
 .contact-item h3 { color: var(--navy-800); }
 .mission {
-  background: linear-gradient(145deg, #0b4a3a 0%, #073b2f 100%);
-  border: 1px solid rgba(197,161,90,.3);
+  background: linear-gradient(145deg, #0c2350 0%, #08173a 100%);
+  border: 1px solid rgba(201,162,39,.3);
   border-radius: 24px;
   padding: clamp(1.5rem, 4vw, 3.2rem);
   box-shadow: var(--shadow-md);
