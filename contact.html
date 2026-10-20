@@ -120,15 +120,64 @@
           </div>
         </div>
 
-        <div class="info-placeholder reveal mt-2">
-          <h3>Information to be confirmed</h3>
-          <p>
-            School office hours, term dates and examination or closing dates are to be
-            confirmed by the school office and published here.
-          </p>
-        </div>
+        
       </div>
     </section>
+
+    <section class="section section--soft" id="printable-school-form">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow">School Forms</span>
+          <h2>School Enquiry and Admission Form</h2>
+          <p class="lead">Complete the form clearly. You can print it and submit the completed copy to the school office.</p>
+        </div>
+        <form class="form-card printable-form" id="school-enquiry-form">
+          <div class="print-form-heading">
+            <img src="images/SCHOOL_LOGO.png" alt="Darel Hikmah International Academy logo" width="72" height="72">
+            <div>
+              <h2>DAREL - HIKMAH INTERNATIONAL ACADEMY</h2>
+              <p>Education for Positive Change</p>
+              <p>No. 66 Zone C Sokale, Duste Alhaji, Abuja, FCT, Nigeria</p>
+            </div>
+          </div>
+          <h3>School Enquiry and Admission Form</h3>
+          <p class="form-note">Please write legibly. Fields marked * are required.</p>
+          <div class="form-grid">
+            <div class="form-row"><label for="form-date">Date *</label><input id="form-date" name="formDate" type="date" required></div>
+            <div class="form-row"><label for="applying-class">Class / programme applying for *</label>
+              <select id="applying-class" name="applyingClass" required>
+                <option value="">Select class or programme</option><option>Creche</option><option>Kindergarten</option><option>Nursery 1</option><option>Nursery 2</option><option>Nursery 3</option><option>Basic 1</option><option>Basic 2</option><option>Basic 3</option><option>Basic 4</option><option>Basic 5</option><option>SS1</option><option>SS2</option><option>SS3</option><option>Islamiyyah</option><option>E-learning</option>
+              </select>
+            </div>
+            <div class="form-row"><label for="applicant-name">Child's full name *</label><input id="applicant-name" name="applicantName" autocomplete="name" required></div>
+            <div class="form-row"><label for="applicant-dob">Date of birth</label><input id="applicant-dob" name="applicantDob" type="date"></div>
+            <div class="form-row"><label for="applicant-gender">Gender</label><select id="applicant-gender" name="applicantGender"><option value="">Select</option><option>Female</option><option>Male</option></select></div>
+            <div class="form-row"><label for="previous-school">Previous school (if any)</label><input id="previous-school" name="previousSchool"></div>
+            <div class="form-row"><label for="guardian-name">Parent / guardian full name *</label><input id="guardian-name" name="guardianName" autocomplete="name" required></div>
+            <div class="form-row"><label for="guardian-relationship">Relationship to child</label><input id="guardian-relationship" name="guardianRelationship"></div>
+            <div class="form-row"><label for="guardian-phone">Phone number *</label><input id="guardian-phone" name="guardianPhone" type="tel" autocomplete="tel" required></div>
+            <div class="form-row"><label for="guardian-email">Email address</label><input id="guardian-email" name="guardianEmail" type="email" autocomplete="email"></div>
+            <div class="form-row form-row--full"><label for="home-address">Residential address *</label><textarea id="home-address" name="homeAddress" rows="2" autocomplete="street-address" required></textarea></div>
+            <div class="form-row"><label for="emergency-name">Emergency contact name</label><input id="emergency-name" name="emergencyName"></div>
+            <div class="form-row"><label for="emergency-phone">Emergency contact phone</label><input id="emergency-phone" name="emergencyPhone" type="tel"></div>
+            <div class="form-row form-row--full"><label for="health-notes">Relevant health information (optional)</label><textarea id="health-notes" name="healthNotes" rows="2"></textarea></div>
+            <div class="form-row form-row--full"><label for="enquiry-notes">Enquiry / additional information</label><textarea id="enquiry-notes" name="enquiryNotes" rows="3"></textarea></div>
+          </div>
+          <div class="form-signatures">
+            <div><span>Parent / guardian signature</span><i></i></div>
+            <div><span>Date</span><i></i></div>
+          </div>
+          <p class="form-note">For school office use</p>
+          <div class="form-grid">
+            <div class="form-row"><label for="office-received">Received by</label><input id="office-received" name="officeReceived"></div>
+            <div class="form-row"><label for="office-action">Office notes</label><input id="office-action" name="officeNotes"></div>
+          </div>
+          <div class="btn-row no-print"><button class="btn btn--primary" type="button" id="print-school-form">Print Form</button><button class="btn btn--ghost" type="reset">Clear Form</button></div>
+        </form>
+      </div>
+    </section>
+
+</section>
 
     <section class="section section--soft">
       <div class="container split">
