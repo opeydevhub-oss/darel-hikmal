@@ -1094,3 +1094,18 @@ main { animation: page-arrive .45s ease both; }
   .hero__text h1 .typing-cursor { animation: none; }
   .reveal, .reveal--left, .reveal--right { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
+
+/* Strict logo palette enforcement: navy, red, gold and neutral surfaces only. */
+.page-hero {
+  background: radial-gradient(circle at 88% 18%, rgba(201,162,39,.13), transparent 22rem),
+    linear-gradient(125deg, #08173a 0%, #0c2350 62%, #123066 100%) !important;
+}
+.cta-band {
+  background: radial-gradient(circle at 90% 20%, rgba(201,162,39,.16), transparent 20rem),
+    linear-gradient(120deg, #08173a, #0c2350) !important;
+}
+.site-footer { background: linear-gradient(145deg, #08173a 0%, #0c2350 100%) !important; color: #eef2fa; }
+.typing-text::after { content: ""; display: inline-block; width: 2px; height: 1em; margin-left: 3px; background: var(--gold-500); vertical-align: -.12em; animation: typing-caret .8s steps(1) infinite; }
+@keyframes typing-caret { 50% { opacity: 0; } }
+.reveal { transform: translateY(24px); }
+.reveal.is-revealed { transform: translateY(0); }
