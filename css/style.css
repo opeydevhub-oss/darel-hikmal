@@ -2178,3 +2178,86 @@ p { max-width: 72ch; }
   .reveal, .reveal--left, .reveal--right { opacity: 1; transform: none; transition: none; }
   .card, .gallery-item, .policy-card, .photo img, .gallery-item img { transition: none; }
 }
+
+
+/* Lightweight school welcome intro. Uses the existing logo palette only. */
+.welcome-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: #fff;
+  color: var(--navy-800);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .45s ease, visibility .45s ease;
+}
+.welcome-screen.is-leaving {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.welcome-screen__content {
+  width: min(100%, 34rem);
+  text-align: center;
+  animation: welcome-rise .7s cubic-bezier(.2,.7,.2,1) both;
+}
+.welcome-screen__logo {
+  display: block;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 1.5rem;
+  object-fit: contain;
+  animation: welcome-logo .7s ease both;
+}
+.welcome-screen__eyebrow {
+  margin: 0 0 .6rem;
+  color: var(--red-600);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.welcome-screen__content h2 {
+  margin: 0;
+  color: var(--navy-800);
+  font-size: clamp(2rem, 7vw, 3.6rem);
+  line-height: 1.04;
+  letter-spacing: -.04em;
+}
+.welcome-screen__subtitle {
+  margin: .55rem 0 1.4rem;
+  color: var(--navy-700);
+  font-size: clamp(.8rem, 2.4vw, 1rem);
+  font-weight: 700;
+  letter-spacing: .2em;
+}
+.welcome-screen__line {
+  display: block;
+  width: 54px;
+  height: 4px;
+  margin: 0 auto;
+  border-radius: 4px;
+  background: var(--gold-500);
+  animation: welcome-line .65s .25s ease both;
+}
+@keyframes welcome-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes welcome-logo {
+  from { opacity: 0; transform: scale(.86); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes welcome-line {
+  from { width: 0; }
+  to { width: 54px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-screen, .welcome-screen__content, .welcome-screen__logo, .welcome-screen__line {
+    animation: none !important;
+    transition: none !important;
+  }
+}
