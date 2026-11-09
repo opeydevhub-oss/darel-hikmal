@@ -301,6 +301,8 @@
     }
   });
 
+  window.addEventListener("school:class-roster-updated", loadDashboard);
+  window.addEventListener("school:subjects-updated", loadDashboard);
   loadDashboard();
   if (location.hash === "#cbt-administration") reveal();
 })();
