@@ -1217,7 +1217,7 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
                   if (clearTerms.error) return { data: null, error: clearTerms.error };
                   return client.from("terms").insert({
                     session_id: sessionId, name: payload.term_name,
-                    start_date: payload.start_date, end_date: payload.end_date, is_current: true
+                    start_date: payload.term_start_date, end_date: payload.term_end_date, is_current: true
                   }).select("id").single();
                 }).then(function (termResult) {
                   if (termResult.error) return { data: null, error: termResult.error };
