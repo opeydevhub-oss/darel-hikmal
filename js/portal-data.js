@@ -774,8 +774,8 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
     var client = c();
     if (!client) { return Promise.resolve(nc()); }
     return Promise.all([
-      client.from("students").select("id,admission_no,first_name,last_name,gender,status").order("first_name"),
-      client.from("staff").select("id,staff_no,full_name,job_title,status").order("full_name"),
+      client.from("students").select("id,profile_id,admission_no,first_name,last_name,date_of_birth,gender,status").is("deleted_at", null).order("first_name"),
+      client.from("staff").select("id,profile_id,staff_no,full_name,job_title,status").order("full_name"),
       client.from("classes").select("id,name,level,arm").order("name"),
       client.from("admissions").select("id,applicant_name,guardian_name,class_applied,status,created_at,reviewed_by").order("created_at", { ascending: false }),
       client.from("fee_records").select("id,student_id,term_id,fee_type,amount_due_kobo,status", { count: "exact" }),
@@ -893,6 +893,7 @@ var term = r[7].data;
           kind: "table", caption: "All pupils on roll",
           columns: ["Admission no.", "Pupil", "Class", "Status"],
           rows: studentRows,
+          rowIds: students.map(function (s) { return s.id; }),
           actions: ["add", "edit", "delete"],
           emptyMessage: "No pupils match this search."
         },
@@ -901,6 +902,7 @@ var term = r[7].data;
           kind: "table", caption: "All staff",
           columns: ["Staff no.", "Name", "Job title", "Status"],
           rows: staffRows,
+          rowIds: staffList.map(function (s) { return s.id; }),
           actions: ["add", "edit", "delete"],
           emptyMessage: "No staff records match this search."
         },
@@ -948,6 +950,8 @@ var term = r[7].data;
             { label: "Fees outstanding", value: money(outstandingTotal) || "—", hint: outstanding.length + " unpaid invoices", tone: "alert" },
             { label: "Open applications", value: String(admissions.filter(function (a) { return a.status === "new" || a.status === "reviewing"; }).length), hint: "awaiting decision", tone: "warn" }],
           panels: panels,
+          adminStudents: students,
+          adminStaff: staffList,
           metaTerm: term ? term.name : "",
           metaSession: ""
         },
@@ -971,7 +975,14 @@ var term = r[7].data;
   };
   PortalData.updateStudent = function (id, payload) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("students").update(payload).eq("id", id).select().single();
+    return client.from("students").update(payload).eq("id", id).select("id,profile_id").single()
+      .then(function (res) {
+        if (res.error || !res.data || !res.data.profile_id) return res;
+        return client.from("profiles").update({ full_name: [payload.first_name, payload.last_name].filter(Boolean).join(" ") })
+          .eq("id", res.data.profile_id).then(function (profileRes) {
+            return profileRes.error ? { data: null, error: profileRes.error } : { data: res.data, error: null };
+          });
+      });
   };
   PortalData.deleteStudent = function (id) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
@@ -985,7 +996,14 @@ var term = r[7].data;
   };
   PortalData.updateStaff = function (id, payload) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("staff").update(payload).eq("id", id).select().single();
+    return client.from("staff").update(payload).eq("id", id).select("id,profile_id").single()
+      .then(function (res) {
+        if (res.error || !res.data || !res.data.profile_id || !payload.full_name) return res;
+        return client.from("profiles").update({ full_name: payload.full_name })
+          .eq("id", res.data.profile_id).then(function (profileRes) {
+            return profileRes.error ? { data: null, error: profileRes.error } : { data: res.data, error: null };
+          });
+      });
   };
   PortalData.deleteStaff = function (id) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
