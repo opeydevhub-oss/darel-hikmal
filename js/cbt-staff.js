@@ -56,6 +56,35 @@
       status("Your CBT staff access is active.");
     } catch (error) { status(error.message, true); }
   }
+  async function loadManualReviews(examId) {
+    var target = document.getElementById("cbt-manual-responses");
+    if (!target) return;
+    target.innerHTML = "<p class='muted'>Loading written responses…</p>";
+    try {
+      var result = await call("staff.manual_reviews", { exam_id: examId });
+      var responses = result.responses || [];
+      if (!responses.length) {
+        target.innerHTML = "<p class='muted'>No written responses are awaiting marking for this examination.</p>";
+        return;
+      }
+      target.innerHTML = responses.map(function (response) {
+        return '<article class="panel mt-1"><h4>' + esc(response.student_name) + ' · ' +
+          esc(response.admission_no) + '</h4>' + response.answers.map(function (answer) {
+            return '<form class="cbt-grade-form mt-1"><input type="hidden" name="attempt_id" value="' +
+              esc(response.attempt_id) + '"><input type="hidden" name="question_id" value="' +
+              esc(answer.question_id) + '"><p><strong>' + esc(answer.prompt) + '</strong></p>' +
+              '<blockquote>' + esc(answer.answer || "No answer provided") + '</blockquote>' +
+              '<label>Mark (maximum ' + esc(answer.marks) + ')<input class="form-control" type="number" name="score" min="0" max="' +
+              esc(answer.marks) + '" step="0.5" value="' + esc(answer.score) + '" required></label>' +
+              '<label>Feedback<textarea class="form-control" name="feedback" rows="2" maxlength="1000">' +
+              esc(answer.feedback) + '</textarea></label><button class="btn btn--primary btn--small mt-1" type="submit">Save mark</button></form>';
+          }).join("") + '</article>';
+      }).join("");
+    } catch (error) {
+      target.innerHTML = "<p class='notice notice--error'>" + esc(error.message) + "</p>";
+    }
+  }
+
   async function openExam(id) {
     selected = (data.exams || []).find(function (x) { return x.id === id; });
     if (!selected) return;
@@ -72,6 +101,7 @@
             "</strong><span class='muted'> · " + esc(q.question_type) + " · " + esc(q.marks) + " marks</span></li>"; }).join("")
           : "<li class='muted'>No questions added yet.</li>";
         document.getElementById("cbt-staff-position").value = String(questions.length + 1);
+        await loadManualReviews(id);
       } catch (error) { status(error.message, true); }
     }
   }
@@ -93,7 +123,8 @@
           '<label class="cbt-staff-mcq">Options (one per line)<textarea class="form-control" name="options" rows="4"></textarea></label>' +
           '<label class="cbt-staff-mcq">Correct option (A, B, C… or True/False)<input class="form-control" name="answer_key" placeholder="A"></label>' +
           '<label>Question<textarea class="form-control" name="prompt" rows="3" required maxlength="5000"></textarea></label></div>' +
-          '<button class="btn btn--primary mt-1" type="submit">Save question</button></form></section>' +
+          '<button class="btn btn--primary mt-1" type="submit">Save question</button></form>' +
+        '<section class="mt-2"><h4>Written responses awaiting marking</h4><div id="cbt-manual-responses"><p class="muted">Select an examination to load written responses.</p></div></section></section>' +
       '<section id="cbt-invig-panel" hidden><p>Confirm the student's admission number and enter the examination PIN supplied by the administrator.</p>' +
         '<form id="cbt-verify-student"><label>Student admission number<input class="form-control" name="admission_no" required></label>' +
         '<label>Session PIN<input class="form-control" name="pin" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required></label>' +
@@ -123,7 +154,18 @@
     event.preventDefault();
     var form = event.target;
     try {
-      if (form.id === "cbt-staff-add-question" && selected) {
+      if (form.classList.contains("cbt-grade-form") && selected) {
+        var grade = new FormData(form);
+        var saved = await call("staff.grade_response", {
+          exam_id: selected.id,
+          attempt_id: grade.get("attempt_id"),
+          question_id: grade.get("question_id"),
+          score: Number(grade.get("score")),
+          feedback: grade.get("feedback")
+        });
+        status(saved.complete ? "All written answers for this student's attempt are marked." : "Mark saved. Other written answers still need marking.");
+        await loadManualReviews(selected.id);
+      } else if (form.id === "cbt-staff-add-question" && selected) {
         var q = new FormData(form);
         var type = q.get("question_type");
         var lines = String(q.get("options") || "").split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
