@@ -560,7 +560,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             .order("name"),
 
           currentTerm(client)
-        ]).then(function (r) {
+        ]).then(async function (r) {
           var failedQuery = r.find(function (item) {
             return item && item.error;
           });
@@ -583,14 +583,34 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
           var term = r[5].data;
 
           var classIds = [];
+          var classOptions = [];
 
           taught.forEach(function (item) {
-            if (
-              item.classes &&
-              !classIds.includes(item.classes.id)
-            ) {
+            if (item.classes && !classIds.includes(item.classes.id)) {
               classIds.push(item.classes.id);
+              classOptions.push(item.classes);
             }
+          });
+
+          var rosterRes = classIds.length && term && term.session_id
+            ? await client.from("enrolments")
+                .select("student_id,class_id,students!inner(id,admission_no,first_name,last_name,status,deleted_at),classes!inner(name,level,arm)")
+                .in("class_id", classIds).eq("session_id", term.session_id).eq("status", "active")
+            : { data: [], error: null };
+          if (rosterRes.error) {
+            return { data: null, error: { message: rosterRes.error.message || "Could not load your assigned class lists." } };
+          }
+          var rosterRows = (rosterRes.data || []).filter(function (item) {
+            return item.students && item.students.status === "active" && !item.students.deleted_at;
+          }).map(function (item) {
+            var student = item.students;
+            var classInfo = item.classes;
+            return [
+              student.admission_no || "—",
+              [student.first_name, student.last_name].filter(Boolean).join(" "),
+              classInfo ? classInfo.name + (classInfo.level ? " · " + classInfo.level : "") : "—",
+              "Active"
+            ];
           });
 
           var now = new Date().toISOString();
@@ -607,7 +627,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             intro: "Mark attendance for a lesson.",
             kind: "register",
             caption: "Class register",
-            classes: classIds,
+            classes: classOptions,
             subjects: allSubjects.map(function (subject) {
               return subject.name;
             }),
@@ -632,11 +652,11 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             columns: [
               "Roll no.",
               "Pupil",
-              "Attendance this term",
-              "Assignments outstanding"
+              "Class",
+              "Enrolment"
             ],
-            rows: [],
-            emptyMessage: "Pupil lists have not been loaded yet."
+            rows: rosterRows,
+            emptyMessage: "No pupils are currently enrolled in your assigned classes."
           });
 
           panels.push({
