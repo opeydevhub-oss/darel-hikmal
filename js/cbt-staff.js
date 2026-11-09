@@ -90,6 +90,8 @@
     if (!selected) return;
     document.getElementById("cbt-staff-selected").hidden = false;
     document.getElementById("cbt-staff-selected-title").textContent = selected.title;
+    var reportForm = document.getElementById("cbt-staff-review-report");
+    if (reportForm) { reportForm.hidden = selected.status !== "closed"; reportForm.reset(); document.getElementById("cbt-review-report-status").textContent = ""; }
     var invigSelect = document.getElementById("cbt-staff-invig-exam");
     if (invigSelect) invigSelect.innerHTML = '<option value="' + esc(id) + '">' + esc(selected.title) + "</option>";
     if (data.staff_role === "teacher") {
@@ -124,7 +126,7 @@
           '<label class="cbt-staff-mcq">Correct option (A, B, C… or True/False)<input class="form-control" name="answer_key" placeholder="A"></label>' +
           '<label>Question<textarea class="form-control" name="prompt" rows="3" required maxlength="5000"></textarea></label></div>' +
           '<button class="btn btn--primary mt-1" type="submit">Save question</button></form>' +
-        '<section class="mt-2"><h4>Written responses awaiting marking</h4><div id="cbt-manual-responses"><p class="muted">Select an examination to load written responses.</p></div></section></section>' +
+        '<section class="mt-2"><h4>Written responses awaiting marking</h4><div id="cbt-manual-responses"><p class="muted">Select an examination to load written responses.</p></div></section><form id="cbt-staff-review-report" class="mt-2"><h4>Submit review report to administrator</h4><p class="muted">Submit after checking automatically marked scores and completing written-answer marking.</p><label>Review notes (optional)<textarea class="form-control" name="note" rows="3" maxlength="1500"></textarea></label><button class="btn btn--primary mt-1" type="submit">Submit review report</button><p class="form-field__hint" id="cbt-review-report-status" role="status"></p></form></section>' +
       '<section id="cbt-invig-panel" hidden><p>Confirm the student's admission number and enter the examination PIN supplied by the administrator.</p>' +
         '<form id="cbt-verify-student"><label>Student admission number<input class="form-control" name="admission_no" required></label>' +
         '<label>Session PIN<input class="form-control" name="pin" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required></label>' +
@@ -165,6 +167,12 @@
         });
         status(saved.complete ? "All written answers for this student's attempt are marked." : "Mark saved. Other written answers still need marking.");
         await loadManualReviews(selected.id);
+      } else if (form.id === "cbt-staff-review-report" && selected) {
+        var reportData = new FormData(form);
+        var report = await call("staff.submit_review_report", { exam_id: selected.id, note: reportData.get("note") });
+        document.getElementById("cbt-review-report-status").textContent =
+          "Report submitted to the administrator at " + new Date(report.submitted_at).toLocaleString() + ".";
+        form.querySelector("button[type=submit]").disabled = true;
       } else if (form.id === "cbt-staff-add-question" && selected) {
         var q = new FormData(form);
         var type = q.get("question_type");
