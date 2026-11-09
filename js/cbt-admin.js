@@ -137,7 +137,8 @@
     event.preventDefault();
     reveal();
   });
-  if (head) head.querySelector(".btn-row")?.appendChild(link);
+  var headerActions = head && head.querySelector(".btn-row");
+  if (headerActions) headerActions.appendChild(link);
 
   var panel = document.createElement("section");
   panel.id = "cbt-admin-panel";
