@@ -208,7 +208,7 @@
         out.hidden = false;
         out.innerHTML = '<h4>Exam results</h4><div class="table-wrap"><table class="table"><thead><tr><th>Student account</th><th>Status</th><th>Score</th><th>Review</th></tr></thead><tbody>' +
           (resultData.results || []).map(function (r) {
-            return "<tr><td>" + escapeHtml(r.student_profile_id) + "</td><td>" + escapeHtml(r.status) +
+            return "<tr><td>" + escapeHtml(r.student_name + (r.admission_no ? " · " + r.admission_no : "")) + "</td><td>" + escapeHtml(r.status) +
               "</td><td>" + escapeHtml(r.score == null ? "—" : r.score + " / " + r.max_score) +
               "</td><td>" + (r.requires_manual_review ? "Required" : "No") + "</td></tr>";
           }).join("") + "</tbody></table></div>";
