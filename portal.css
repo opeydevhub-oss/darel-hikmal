@@ -876,3 +876,12 @@ body.portal-body { background: var(--bg-soft); }
   .class-subject-add__row { flex-direction:column; align-items:stretch; }
   .class-subject-add__row .btn { width:100%; }
 }
+
+.academic-session-panel .form-stack { max-width: 46rem; }
+.academic-session-panel .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.academic-session-panel .form-control { width:100%; min-width:0; box-sizing:border-box; }
+.academic-session-history { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--line); }
+.academic-session-list { list-style:none; padding:0; margin:0; display:grid; gap:.65rem; }
+.academic-session-list li { display:grid; gap:.2rem; padding:.85rem; border:1px solid var(--line); border-radius:var(--radius); background:#fff; }
+.academic-session-list li span { color:var(--ink-muted); font-size:.9rem; }
+@media(max-width:600px) { .academic-session-panel .form-grid { grid-template-columns:1fr; } }
