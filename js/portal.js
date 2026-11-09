@@ -389,7 +389,7 @@ var PortalDashboard = {
       document.body.appendChild(dialog);
     }
     var fields = kind === "pupils"
-      ? [["admission_no","Admission number","text",true],["first_name","First name","text",true],["last_name","Last name","text",true],["date_of_birth","Date of birth","date",false],["gender","Gender","gender",false],["status","Status","status",true]]
+      ? [["admission_no","Admission number","text",true],["first_name","First name","text",true],["last_name","Last name","text",true],["date_of_birth","Date of birth","date",false],["gender","Gender","gender",false],["class_id","Current class","class",false],["status","Status","status",true]]
       : [["staff_no","Staff number","text",true],["full_name","Full name","text",true],["job_title","Job title","text",false],["status","Status","status",true]];
     var html = '<form id="portal-record-editor-form" class="form-stack" data-kind="' + kind + '" data-id="' + portalEscape(id) + '">' +
       '<div class="panel__head"><div><span class="eyebrow">School records</span><h2>Edit ' + (kind === "pupils" ? "student" : "staff") +
@@ -397,7 +397,15 @@ var PortalDashboard = {
     fields.forEach(function (field) {
       var value = record[field[0]] == null ? "" : String(record[field[0]]);
       html += '<label>' + field[1];
-      if (field[2] === "gender") {
+      if (field[2] === "class") {
+        var currentEnrolment = (this.config.adminEnrolments || []).find(function (item) { return item.student_id === id; });
+        value = currentEnrolment ? currentEnrolment.class_id : "";
+        html += '<select class="form-control" name="class_id"><option value="">Unassigned</option>' +
+          (this.config.adminClasses || []).map(function (item) {
+            var label = [item.name, item.level, item.arm].filter(Boolean).join(" · ");
+            return '<option value="' + portalEscape(item.id) + '"' + (value === item.id ? " selected" : "") + '>' + portalEscape(label) + '</option>';
+          }).join("") + '</select>';
+      } else if (field[2] === "gender") {
         html += '<select class="form-control" name="' + field[0] + '"><option value="">Not recorded</option>' +
           ["Female","Male","Other"].map(function (v) { return '<option value="' + v + '"' + (value.toLowerCase() === v.toLowerCase() ? " selected" : "") + '>' + v + '</option>'; }).join("") + '</select>';
       } else if (field[2] === "status") {
