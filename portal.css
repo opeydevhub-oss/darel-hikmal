@@ -743,3 +743,38 @@ body.portal-body { background: var(--bg-soft); }
 @media (max-width: 899px) {
   .coming-soon { padding: 2.25rem 1.25rem; }
 }
+
+/* CBT dashboard responsive cards and forms */
+.dash__main, .dash__main > *, #cbt-admin-panel, #staff-cbt-panel,
+#cbt-admin-panel *, #staff-cbt-panel * { min-width:0; box-sizing:border-box; }
+#cbt-admin-panel, #staff-cbt-panel { width:100%; max-width:100%; overflow-wrap:anywhere; }
+#cbt-admin-panel .grid, #staff-cbt-panel .grid {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; width:100%;
+}
+#cbt-admin-panel .panel, #staff-cbt-panel .panel {
+  width:100%; max-width:100%; padding:clamp(1rem,3vw,1.5rem);
+}
+#cbt-admin-panel form, #staff-cbt-panel form { width:100%; max-width:100%; }
+#cbt-admin-panel form label, #staff-cbt-panel form label {
+  display:block; min-width:0; margin-bottom:.85rem; overflow-wrap:anywhere;
+}
+#cbt-admin-panel .form-control, #staff-cbt-panel .form-control {
+  display:block; width:100%; max-width:100%; min-width:0; margin-top:.35rem; box-sizing:border-box;
+}
+#cbt-admin-panel .btn-row, #staff-cbt-panel .btn-row, #cbt-admin-panel .panel__head {
+  display:flex; flex-wrap:wrap; align-items:center; gap:.55rem;
+}
+#cbt-admin-panel .table-wrap, #staff-cbt-panel .table-wrap {
+  width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;
+}
+#cbt-admin-panel table, #staff-cbt-panel table { width:100%; min-width:34rem; }
+@media (max-width:700px) {
+  #cbt-admin-panel .grid, #staff-cbt-panel .grid { grid-template-columns:minmax(0,1fr); }
+  #cbt-admin-panel .panel, #staff-cbt-panel .panel { padding:1rem; }
+  #cbt-admin-panel .btn-row > .btn, #staff-cbt-panel .btn-row > .btn {
+    flex:1 1 100%; width:100%; justify-content:center;
+  }
+  #cbt-admin-panel .panel__head { align-items:stretch; }
+  #cbt-admin-panel .panel__head > * { max-width:100%; }
+  .dash__main .panel-grid, .dash__main .grid--2 { grid-template-columns:minmax(0,1fr); }
+}
