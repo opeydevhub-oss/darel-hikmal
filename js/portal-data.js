@@ -1077,7 +1077,23 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
       p_student_ids: payload.student_ids || [],
       p_teacher_assignments: payload.teacher_assignments || []
     }).then(function (res) {
-      return res.error ? { data: null, error: res.error } : { data: res.data, error: null };
+      if (res.error) return { data: null, error: res.error };
+      if (!payload.session_id) return { data: res.data, error: null };
+      return client.functions.invoke("cbt-api", {
+        body: { action: "admin.sync_students" }
+      }).then(function (studentSync) {
+        if (studentSync.error || (studentSync.data && studentSync.data.error)) {
+          return { data: null, error: { message: "Class saved, but CBT student records did not sync. " + ((studentSync.data && studentSync.data.error) || studentSync.error.message) } };
+        }
+        return client.functions.invoke("cbt-api", {
+          body: { action: "admin.sync_teacher_assignments", session_id: payload.session_id }
+        }).then(function (teacherSync) {
+          if (teacherSync.error || (teacherSync.data && teacherSync.data.error)) {
+            return { data: null, error: { message: "Class and student records saved, but CBT teacher assignments did not sync. " + ((teacherSync.data && teacherSync.data.error) || teacherSync.error.message) } };
+          }
+          return { data: res.data, error: null };
+        });
+      });
     });
   };
 
