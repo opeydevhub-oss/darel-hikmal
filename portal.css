@@ -778,3 +778,32 @@ body.portal-body { background: var(--bg-soft); }
   #cbt-admin-panel .panel__head > * { max-width:100%; }
   .dash__main .panel-grid, .dash__main .grid--2 { grid-template-columns:minmax(0,1fr); }
 }
+
+
+/* Keep every dashboard card and its forms inside the available phone width. */
+.dash__main { min-width:0; max-width:100%; overflow-x:clip; }
+.dash__main .panel-grid,
+.dash__main .grid,
+.dash__main .grid--2,
+.dash__main .stat-grid {
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));
+  min-width:0;
+}
+.dash__main .panel-grid > *,
+.dash__main .grid > *,
+.dash__main .grid--2 > *,
+.dash__main .stat-grid > * { min-width:0; max-width:100%; }
+.dash__main form { width:100%; max-width:100%; min-width:0; }
+.dash__main form label { display:block; min-width:0; max-width:100%; }
+.dash__main form input,
+.dash__main form select,
+.dash__main form textarea {
+  display:block; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+}
+@media (max-width:700px) {
+  .dash__main .panel-grid,
+  .dash__main .grid,
+  .dash__main .grid--2,
+  .dash__main .stat-grid { grid-template-columns:minmax(0,1fr); }
+  .dash__main .panel { padding:1rem; }
+}
