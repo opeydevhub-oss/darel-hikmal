@@ -833,3 +833,19 @@ body.portal-body { background: var(--bg-soft); }
   .portal-editor-dialog { width:calc(100vw - 1.25rem); max-height:90vh; }
   .portal-editor-dialog .btn-row .btn { flex-basis:100%; }
 }
+
+
+/* Class roster editor */
+.portal-class-editor { width:min(96vw, 46rem); }
+.class-editor-section { min-width:0; margin:1rem 0; padding:1rem; border:1px solid #dce2eb; border-radius:1rem; background:#f8faff; }
+.class-editor-section h3 { margin:0 0 .35rem; color:#0c2350; }
+.class-editor-list { display:grid; grid-template-columns:minmax(0,1fr); gap:.55rem; max-height:19rem; overflow:auto; padding:.2rem; }
+.class-editor-choice { display:flex!important; align-items:center; gap:.7rem; min-width:0; margin:0!important; padding:.7rem; border:1px solid #dce2eb; border-radius:.7rem; background:#fff; }
+.class-editor-choice input { flex:0 0 auto; width:1.1rem; height:1.1rem; margin:0; accent-color:#0c2350; }
+.class-editor-choice span { min-width:0; overflow-wrap:anywhere; }
+.class-editor-choice small { display:block; color:#65728a; }
+.class-editor-teacher { min-width:0; margin:0; padding:.8rem; border:1px solid #dce2eb; border-radius:.8rem; background:#fff; }
+.class-editor-teacher legend { padding:0 .35rem; color:#0c2350; font-weight:700; }
+.class-editor-lead { background:#f8faff; }
+.class-editor-subjects { display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:.4rem; margin-top:.55rem; }
+@media (max-width:480px) { .portal-class-editor { width:calc(100vw - 1rem); } .class-editor-section { padding:.7rem; } }
