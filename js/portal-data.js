@@ -782,7 +782,9 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
       client.from("payments").select("id,fee_record_id,amount_kobo,paid_at,status", { count: "exact" }),
       client.from("announcements").select("id,title,body,audience,status,created_at").order("created_at", { ascending: false }),
       currentTerm(client),
-      client.from("enrolments").select("student_id,class_id,session_id,status").eq("status", "active")
+      client.from("enrolments").select("student_id,class_id,session_id,status").eq("status", "active"),
+      client.from("teaching_assignments").select("id,staff_id,class_id,subject_id,session_id,is_class_teacher,staff:staff(id,full_name,staff_no),subject:subjects(id,name)").order("created_at"),
+      client.from("subjects").select("id,name,code").eq("is_active", true).order("name")
     ]).then(function (r) {
       
 var failedQuery = r.find(function (item) {
@@ -808,9 +810,20 @@ var payments = r[5];
 var announcements = r[6].data || [];
 var term = r[7].data;
 var enrolments = r[8].data || [];
+var allTeachingAssignments = r[9].data || [];
+var subjects = r[10].data || [];
 var currentEnrolments = term && term.session_id
   ? enrolments.filter(function (e) { return e.session_id === term.session_id; })
   : [];
+var currentTeachingAssignments = term && term.session_id
+  ? allTeachingAssignments.filter(function (a) { return a.session_id === term.session_id; })
+  : [];
+var assignmentsByClass = {};
+var assignmentsByStaff = {};
+currentTeachingAssignments.forEach(function (a) {
+  (assignmentsByClass[a.class_id] = assignmentsByClass[a.class_id] || []).push(a);
+  (assignmentsByStaff[a.staff_id] = assignmentsByStaff[a.staff_id] || []).push(a);
+});
 var enrolmentByStudent = {};
 currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; });
 
@@ -852,16 +865,24 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
           s.staff_no || "—",
           s.full_name || "—",
           s.job_title || "—",
+          (assignmentsByStaff[s.id] || []).map(function (a) { return a.classes && a.classes.name ? a.classes.name : (classById[a.class_id] ? classById[a.class_id].name : ""); }).filter(Boolean).filter(function (name, index, all) { return all.indexOf(name) === index; }).join(", ") || "Unassigned",
           (s.status || "unknown").toUpperCase()
         ];
       });
 
       var classRows = classes.map(function (c) {
+        var classAssignments = assignmentsByClass[c.id] || [];
+        var classTeachers = classAssignments.filter(function (a) { return a.is_class_teacher; })
+          .map(function (a) { return a.staff && a.staff.full_name ? a.staff.full_name : "Assigned teacher"; })
+          .filter(function (name, index, all) { return all.indexOf(name) === index; });
+        var teacherNames = classTeachers.length ? classTeachers :
+          classAssignments.map(function (a) { return a.staff && a.staff.full_name ? a.staff.full_name : ""; })
+            .filter(function (name, index, all) { return name && all.indexOf(name) === index; });
         return [
           c.name || "—",
           [c.level, c.arm].filter(Boolean).join(" ") || "—",
-          "—",
-          "—"
+          teacherNames.join(", ") || "Not assigned",
+          String(currentEnrolments.filter(function (e) { return e.class_id === c.id; }).length)
         ];
       });
 
@@ -906,7 +927,7 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
         {
           id: "staff", title: "Manage staff", intro: "Staff records, roles and class allocations.",
           kind: "table", caption: "All staff",
-          columns: ["Staff no.", "Name", "Job title", "Status"],
+          columns: ["Staff no.", "Name", "Job title", "Classes", "Status"],
           rows: staffRows,
           rowIds: staffList.map(function (s) { return s.id; }),
           emptyMessage: "No staff records match this search."
@@ -916,7 +937,8 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
           kind: "table", caption: "All classes",
           columns: ["Class", "Level", "Teacher", "Pupils"],
           rows: classRows,
-          actions: ["add", "edit", "delete"],
+          rowIds: classes.map(function (item) { return item.id; }),
+          actions: ["add"],
           emptyMessage: "No classes have been created yet."
         },
         {
@@ -960,6 +982,8 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
           adminClasses: classes,
           adminEnrolments: currentEnrolments,
           adminSessionId: term ? term.session_id : null,
+          adminTeachingAssignments: currentTeachingAssignments,
+          adminSubjects: subjects,
           metaTerm: term ? term.name : "",
           metaSession: ""
         },
@@ -1041,18 +1065,20 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
     return client.from("staff").delete().eq("id", id);
   };
 
-  /* ---- CRUD: classes (admin) ---- */
-  PortalData.createClass = function (payload) {
+  /* ---- Classes, current-session enrolments and teacher assignments ---- */
+  PortalData.saveClassRoster = function (payload) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("classes").insert(payload).select().single();
-  };
-  PortalData.updateClass = function (id, payload) {
-    var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("classes").update(payload).eq("id", id).select().single();
-  };
-  PortalData.deleteClass = function (id) {
-    var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("classes").delete().eq("id", id);
+    return client.rpc("admin_save_class_roster", {
+      p_class_id: payload.id || null,
+      p_name: payload.name,
+      p_level: payload.level,
+      p_arm: payload.arm || null,
+      p_session_id: payload.session_id || null,
+      p_student_ids: payload.student_ids || [],
+      p_teacher_assignments: payload.teacher_assignments || []
+    }).then(function (res) {
+      return res.error ? { data: null, error: res.error } : { data: res.data, error: null };
+    });
   };
 
   /* ---- CRUD: announcements (admin) ---- */
