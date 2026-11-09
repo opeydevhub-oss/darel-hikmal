@@ -117,6 +117,7 @@
     document.getElementById("cbt-close-button").hidden = !["scheduled", "open"].includes(exam.status) ||
       Date.now() < new Date(exam.ends_at).getTime();
     document.getElementById("cbt-release-button").hidden = exam.status !== "closed";
+    document.getElementById("cbt-review-report-button").hidden = !["closed", "released"].includes(exam.status);
     fillSelect(document.getElementById("cbt-invigilator-exam"), [exam], function (x) { return x.title; });
     try { await loadQuestions(id); message("Examination selected.", "info"); }
     catch (error) { message(error.message, "error"); }
@@ -161,7 +162,7 @@
         '<button class="btn btn--primary" type="submit">Create draft examination</button></form></section>' +
       '<section class="panel"><h3>Examinations</h3><div class="table-wrap"><table class="table"><thead><tr><th>Exam</th><th>Class</th><th>Subject</th><th>Status</th><th></th></tr></thead><tbody id="cbt-exams-body"><tr><td colspan="5">Loading…</td></tr></tbody></table></div></section>' +
     '</div>' +
-    '<section id="cbt-selected-exam" class="panel mt-2" hidden><div class="panel__head"><div><h3 id="cbt-selected-title">Selected examination</h3><p id="cbt-selected-meta" class="muted"></p></div><div class="btn-row"><button id="cbt-schedule-button" type="button" class="btn btn--primary">Schedule exam</button><button id="cbt-pin-button" type="button" class="btn btn--outline-navy">Generate session PIN</button><button id="cbt-close-button" type="button" class="btn btn--outline-navy" hidden>Close exam</button><button id="cbt-release-button" type="button" class="btn btn--primary" hidden>Release results</button><button id="cbt-results-button" type="button" class="btn btn--ghost">View results</button></div></div>' +
+    '<section id="cbt-selected-exam" class="panel mt-2" hidden><div class="panel__head"><div><h3 id="cbt-selected-title">Selected examination</h3><p id="cbt-selected-meta" class="muted"></p></div><div class="btn-row"><button id="cbt-schedule-button" type="button" class="btn btn--primary">Schedule exam</button><button id="cbt-pin-button" type="button" class="btn btn--outline-navy">Generate session PIN</button><button id="cbt-close-button" type="button" class="btn btn--outline-navy" hidden>Close exam</button><button id="cbt-release-button" type="button" class="btn btn--primary" hidden>Release results</button><button id="cbt-results-button" type="button" class="btn btn--ghost">View results</button><button id="cbt-review-report-button" type="button" class="btn btn--outline-navy" hidden>Teacher review reports</button></div></div>' +
       '<div id="cbt-pin-output" class="notice notice--info" hidden></div><h4>Questions</h4><ol id="cbt-question-list"><li class="muted">Loading questions…</li></ol>' +
       '<form id="cbt-add-question" class="mt-2"><h4>Add question</h4><div class="grid grid--2">' +
         '<label>Question type<select class="form-control" name="question_type"><option value="mcq">Multiple choice</option><option value="true_false">True / False</option><option value="short_answer">Short answer (manual review)</option></select></label>' +
@@ -173,7 +174,7 @@
         '<button class="btn btn--primary mt-1" type="submit">Save question</button></form>' +
       '<div class="grid grid--2 mt-2"><form id="cbt-assign-invigilator"><h4>Assign invigilator</h4><label>Staff member<select class="form-control" id="cbt-invigilator-staff" name="profile_id" required></select></label><button class="btn btn--outline-navy mt-1" type="submit">Assign to this exam</button></form>' +
       '<form id="cbt-assign-teacher"><h4>Assign teacher</h4><label>Staff member<select class="form-control" id="cbt-teacher-staff" name="profile_id" required></select></label><label>Class<select class="form-control" id="cbt-teacher-class" name="class_id" required></select></label><label>Subject<select class="form-control" id="cbt-teacher-subject" name="subject_id" required></select></label><label>Session<select class="form-control" id="cbt-teacher-session" name="session_id" required></select></label><button class="btn btn--outline-navy mt-1" type="submit">Assign teacher</button></form></div>' +
-      '<div id="cbt-results-output" class="mt-2" hidden></div>' +
+      '<div id="cbt-results-output" class="mt-2" hidden></div><div id="cbt-review-report-output" class="mt-2" hidden></div>' +
     '</section>';
 
   var dataPanels = main.querySelector("[data-dash-panels]");
@@ -219,6 +220,23 @@
         output.hidden = false;
         output.innerHTML = "<strong>Session PIN: " + escapeHtml(pin.pin) + "</strong><p>" + escapeHtml(pin.note) + "</p><p>Expires: " + escapeHtml(new Date(pin.expires_at).toLocaleString()) + "</p>";
         message("New PIN generated. Copy it and share it only with assigned invigilators.", "info");
+      } catch (error) { message(error.message, "error"); }
+    }
+    if (event.target.id === "cbt-review-report-button" && state.exam) {
+      try {
+        var reports = await call("admin.review_reports", { exam_id: state.exam.id });
+        var reportOut = document.getElementById("cbt-review-report-output");
+        reportOut.hidden = false;
+        reportOut.innerHTML = '<h4>Teacher review reports</h4>' +
+          ((reports.reports || []).length ? reports.reports.map(function (report) {
+            var meta = report.metadata || {};
+            return '<article class="notice notice--info"><strong>Review submitted</strong><p>Teacher account: ' +
+              escapeHtml(report.actor_profile_id) + '</p><p>Submitted: ' +
+              escapeHtml(new Date(report.created_at).toLocaleString()) + '</p><p>Attempts reviewed: ' +
+              escapeHtml(meta.attempts_reviewed == null ? "—" : meta.attempts_reviewed) +
+              ' · Written responses marked: ' + escapeHtml(meta.written_responses_marked == null ? "—" : meta.written_responses_marked) +
+              '</p><p>' + escapeHtml(meta.note || "No additional note.") + '</p></article>';
+          }).join("") : '<p class="muted">No teacher review report has been submitted for this examination yet.</p>');
       } catch (error) { message(error.message, "error"); }
     }
     if (event.target.id === "cbt-results-button" && state.exam) {
