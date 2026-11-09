@@ -212,6 +212,8 @@ var PortalDashboard = {
         var wanted = (window.location.hash || "").replace("#", "");
         if (wanted && self.panelById(wanted)) {
           self.activate(wanted, false);
+        } else if (self.config.panels && self.config.panels.length) {
+          self.activate(self.config.panels[0].id, false);
         }
       })
       .catch(function () {
@@ -230,6 +232,9 @@ var PortalDashboard = {
 
   panelById: function (id) {
     if (!this.config) { return null; }
+    if (this.role === "admin" && id === "cbt-administration") {
+      return { id: id, title: "CBT Management" };
+    }
     return this.config.panels.filter(function (panel) { return panel.id === id; })[0] || null;
   },
 
@@ -243,16 +248,30 @@ var PortalDashboard = {
     if (metaEl) { metaEl.textContent = this.config.person ? this.config.person.meta : ""; }
 
     if (!nav || !this.config.panels) { return; }
-    nav.innerHTML = this.config.panels.map(function (panel) {
+    var menuItems = this.config.panels.slice();
+    if (this.role === "admin") menuItems.push({ id: "cbt-administration", title: "CBT Management", kind: "cbt" });
+    nav.innerHTML = menuItems.map(function (panel) {
       return '<a class="dash__nav-link" href="#' + panel.id + '" data-dash-link="' + panel.id + '">' +
         portalIcon(panel.kind === "register" ? "attendance" : panel.id) +
         "<span>" + portalEscape(panel.title) + "</span></a>";
     }).join("");
 
+    var toggle = portalQuery("[data-dash-menu-toggle]");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.addEventListener("click", function () {
+        var open = toggle.getAttribute("aria-expanded") !== "true";
+        toggle.setAttribute("aria-expanded", String(open));
+        nav.hidden = !open;
+      });
+    }
+
     nav.addEventListener("click", function (event) {
       var link = event.target.closest("[data-dash-link]");
       if (!link) { return; }
       event.preventDefault();
+      nav.hidden = true;
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
       selfFromNav(PortalDashboard, link.getAttribute("data-dash-link"));
     });
   },
@@ -287,7 +306,13 @@ var PortalDashboard = {
     this.activePanel = id;
     this.markActive(id);
 
-    var target = portalQuery("#panel-" + id);
+    portalQueryAll("[data-dash-panel]").forEach(function (section) {
+      section.hidden = section.getAttribute("data-dash-panel") !== id;
+    });
+    var cbtPanel = portalQuery("#cbt-admin-panel");
+    if (cbtPanel) cbtPanel.hidden = id !== "cbt-administration";
+
+    var target = id === "cbt-administration" ? cbtPanel : portalQuery("#panel-" + id);
     if (target) {
       var reduced = typeof REDUCED_MOTION !== "undefined" && REDUCED_MOTION.matches;
       target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
@@ -481,6 +506,12 @@ var PortalDashboard = {
     var staffList = (this.config.adminStaff || []).filter(function (item) { return item.status === "active"; });
     var students = (this.config.adminStudents || []).filter(function (item) { return item.status === "active"; });
     var subjects = this.config.adminSubjects || [];
+    var standardLevels = [];
+    for (var basic = 1; basic <= 9; basic += 1) standardLevels.push("Basic " + basic);
+    for (var senior = 1; senior <= 3; senior += 1) standardLevels.push("SS " + senior);
+    if (classRecord.level && standardLevels.indexOf(classRecord.level) === -1) {
+      standardLevels.unshift(classRecord.level);
+    }
 
     var html = '<form id="portal-class-editor-form" class="form-stack">' +
       '<div class="panel__head"><div><span class="eyebrow">Class management</span><h2>' +
@@ -488,7 +519,9 @@ var PortalDashboard = {
       '</h2><p>Choose existing pupils and assign teachers to subjects.</p></div>' +
       '<button type="button" class="btn btn--ghost btn--small" data-class-close>Close</button></div>' +
       '<label>Class name<input class="form-control" name="name" required maxlength="80" value="' + portalEscape(classRecord.name || "") + '"></label>' +
-      '<label>Level / year group<input class="form-control" name="level" required maxlength="40" value="' + portalEscape(classRecord.level || "") + '"></label>' +
+      '<label>Level / year group<select class="form-control" name="level" required><option value="">Choose a class level…</option>' +
+      standardLevels.map(function (level) { return '<option value="' + portalEscape(level) + '"' + (classRecord.level === level ? " selected" : "") + '>' + portalEscape(level) + '</option>'; }).join("") +
+      '</select></label>' +
       '<label>Arm (optional)<input class="form-control" name="arm" maxlength="40" value="' + portalEscape(classRecord.arm || "") + '"></label>' +
       '<section class="class-editor-section"><h3>Existing students</h3><p class="muted">Tick every student who belongs to this class for the current academic session.</p>' +
       (students.length ? '<div class="class-editor-list">' + students.map(function (student) {
@@ -498,8 +531,9 @@ var PortalDashboard = {
           '</strong><small>' + portalEscape(student.admission_no || "No admission number") + '</small></span></label>';
       }).join("") + '</div>' : '<p class="muted">No active student records are available.</p>') +
       '</section><section class="class-editor-section"><h3>Teachers and subjects</h3>' +
-      '<p class="muted">Select one or more subjects for each teacher. You can designate one class teacher.</p>' +
-      (staffList.length && subjects.length ? '<div class="class-editor-list">' + staffList.map(function (staff) {
+      '<p class="muted">Add the subjects the school offers, then select each teacher and their subjects. You can designate one class teacher.</p>' +
+      '<div class="class-subject-add"><label for="class-new-subject">Add a subject</label><div class="class-subject-add__row"><input class="form-control" id="class-new-subject" maxlength="80" placeholder="e.g. Mathematics"><button type="button" class="btn btn--outline-navy btn--small" data-add-subject>Add subject</button></div><p class="muted" data-subject-message role="status"></p></div>' +
+      (staffList.length ? '<div class="class-editor-list">' + staffList.map(function (staff) {
         var staffAssignments = assignments.filter(function (item) { return item.staff_id === staff.id; });
         var assignedSubjectIds = staffAssignments.map(function (item) { return item.subject_id; });
         var isClassTeacher = staffAssignments.some(function (item) { return item.is_class_teacher; });
@@ -510,7 +544,7 @@ var PortalDashboard = {
             return '<label class="class-editor-choice"><input type="checkbox" name="teacher_subject" value="' + portalEscape(staff.id + "|" + subject.id) + '"' +
               (assignedSubjectIds.indexOf(subject.id) !== -1 ? " checked" : "") + '><span>' + portalEscape(subject.name) + '</span></label>';
           }).join("") + '</div></fieldset>';
-      }).join("") + '</div>' : '<p class="muted">Add active staff and subjects before assigning teachers.</p>') +
+      }).join("") + '</div>' : '<p class="muted">Add active staff before assigning teachers.</p>') +
       '</section>' +
       (this.config.adminSessionId ? '<p class="muted">Assignments apply to the current academic session.</p>' :
         '<p class="notice notice--warn">No current academic session is set. You can save class details, but cannot assign students or teachers yet.</p>') +
@@ -522,6 +556,52 @@ var PortalDashboard = {
     if (!dialog.open) dialog.showModal();
     dialog.querySelectorAll("[data-class-close]").forEach(function (button) {
       button.addEventListener("click", function () { dialog.close(); });
+    });
+
+    var addSubjectButton = dialog.querySelector("[data-add-subject]");
+    addSubjectButton.addEventListener("click", function () {
+      var input = dialog.querySelector("#class-new-subject");
+      var status = dialog.querySelector("[data-subject-message]");
+      var subjectName = input.value.trim();
+      if (!subjectName) { status.textContent = "Enter a subject name first."; input.focus(); return; }
+      if (subjects.some(function (subject) { return subject.name.toLowerCase() === subjectName.toLowerCase(); })) {
+        status.textContent = "That subject already exists.";
+        return;
+      }
+      var baseCode = subjectName.toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 10) || "SUBJECT";
+      var code = baseCode;
+      var suffix = 2;
+      while (subjects.some(function (subject) { return subject.code === code; })) {
+        code = baseCode.slice(0, 7) + suffix;
+        suffix += 1;
+      }
+      addSubjectButton.disabled = true;
+      status.textContent = "Saving subject…";
+      PortalData.createSubject({ name: subjectName, code: code, is_active: true }).then(function (result) {
+        if (result.error || !result.data) throw new Error(result.error ? result.error.message : "Could not create the subject.");
+        var created = result.data;
+        subjects.push(created);
+        self.config.adminSubjects = subjects;
+        dialog.querySelectorAll(".class-editor-subjects").forEach(function (list) {
+          var staffId = list.closest(".class-editor-teacher").querySelector('input[name="class_teacher"]').value;
+          var label = document.createElement("label");
+          label.className = "class-editor-choice";
+          var checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.name = "teacher_subject";
+          checkbox.value = staffId + "|" + created.id;
+          var text = document.createElement("span");
+          text.textContent = created.name;
+          label.append(checkbox, text);
+          list.appendChild(label);
+        });
+        input.value = "";
+        status.textContent = "Subject added. It is now available for teacher assignments and CBT exams.";
+      }).catch(function (error) {
+        status.textContent = error.message || "Could not add the subject.";
+      }).finally(function () {
+        addSubjectButton.disabled = false;
+      });
     });
 
     dialog.querySelector("form").addEventListener("submit", function (event) {
