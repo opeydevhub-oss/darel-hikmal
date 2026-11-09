@@ -435,8 +435,9 @@ var PortalDashboard = {
       '<div class="panel__head"><div><span class="eyebrow">School calendar</span><h2 id="heading-academic-sessions">Academic sessions</h2><p>Create the school year and select its current term. This unlocks class and teacher allocations.</p></div></div>' +
       '<form id="academic-session-form" class="form-stack">' +
       '<label>Academic year<input class="form-control" name="name" placeholder="e.g. 2026/2027" required maxlength="30"></label>' +
-      '<div class="form-grid"><label>Start date<input class="form-control" type="date" name="start_date" required></label><label>End date<input class="form-control" type="date" name="end_date" required></label></div>' +
+      '<div class="form-grid"><label>Academic year starts<input class="form-control" type="date" name="start_date" required></label><label>Academic year ends<input class="form-control" type="date" name="end_date" required></label></div>' +
       '<label>Current term<select class="form-control" name="term_name" required><option value="First Term">First Term</option><option value="Second Term">Second Term</option><option value="Third Term">Third Term</option></select></label>' +
+      '<div class="form-grid"><label>Term starts<input class="form-control" type="date" name="term_start_date" required></label><label>Term ends<input class="form-control" type="date" name="term_end_date" required></label></div>' +
       '<p class="muted">Choose the dates using your phone calendar. Saving makes this the active academic session and term.</p>' +
       '<p class="notice notice--warn" data-session-message role="status" aria-live="polite">No academic session has been set yet.</p>' +
       '<button class="btn btn--primary" type="submit" data-session-save>Save and activate session</button></form>' +
@@ -477,11 +478,15 @@ var PortalDashboard = {
       name: String(formData.get("name") || "").trim(),
       start_date: String(formData.get("start_date") || ""),
       end_date: String(formData.get("end_date") || ""),
-      term_name: String(formData.get("term_name") || "First Term")
+      term_name: String(formData.get("term_name") || "First Term"),
+      term_start_date: String(formData.get("term_start_date") || ""),
+      term_end_date: String(formData.get("term_end_date") || "")
     };
     var message = portalQuery("[data-session-message]");
     var button = portalQuery("[data-session-save]");
-    if (!payload.name || !payload.start_date || !payload.end_date || payload.end_date < payload.start_date) {
+    if (!payload.name || !payload.start_date || !payload.end_date || !payload.term_start_date || !payload.term_end_date ||
+        payload.end_date < payload.start_date || payload.term_start_date < payload.start_date ||
+        payload.term_end_date > payload.end_date || payload.term_end_date < payload.term_start_date) {
       if (message) { message.textContent = "Enter an academic year and valid start and end dates."; message.className = "notice notice--error"; }
       return;
     }
