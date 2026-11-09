@@ -402,7 +402,7 @@ var PortalDashboard = {
           ["Female","Male","Other"].map(function (v) { return '<option value="' + v + '"' + (value.toLowerCase() === v.toLowerCase() ? " selected" : "") + '>' + v + '</option>'; }).join("") + '</select>';
       } else if (field[2] === "status") {
         html += '<select class="form-control" name="' + field[0] + '" required>' +
-          ["active","inactive","graduated","transferred","suspended"].map(function (v) { return '<option value="' + v + '"' + (value.toLowerCase() === v ? " selected" : "") + '>' + v.charAt(0).toUpperCase() + v.slice(1) + '</option>'; }).join("") + '</select>';
+          (kind === "pupils" ? ["active","graduated","withdrawn","suspended"] : ["active","inactive"]).map(function (v) { return '<option value="' + v + '"' + (value.toLowerCase() === v ? " selected" : "") + '>' + v.charAt(0).toUpperCase() + v.slice(1) + '</option>'; }).join("") + '</select>';
       } else {
         html += '<input class="form-control" type="' + field[2] + '" name="' + field[0] + '"' +
           (field[3] ? " required" : "") + ' value="' + portalEscape(value) + '">';
