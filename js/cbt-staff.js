@@ -103,6 +103,18 @@
             "</strong><span class='muted'> · " + esc(q.question_type) + " · " + esc(q.marks) + " marks</span></li>"; }).join("")
           : "<li class='muted'>No questions added yet.</li>";
         document.getElementById("cbt-staff-position").value = String(questions.length + 1);
+        var review = await call("staff.exam_review", { exam_id: id });
+        var reviewTarget = document.getElementById("cbt-staff-results-review");
+        reviewTarget.innerHTML = (review.results || []).length
+          ? '<table class="table"><thead><tr><th>Student</th><th>Status</th><th>Auto mark</th><th>Manual mark</th><th>Total</th><th>Review</th></tr></thead><tbody>' +
+            review.results.map(function (row) {
+              return '<tr><td>' + esc(row.student_name + (row.admission_no ? " · " + row.admission_no : "")) +
+                '</td><td>' + esc(row.status) + '</td><td>' + esc(row.objective_score == null ? "—" : row.objective_score) +
+                ' / ' + esc(row.max_score) + '</td><td>' + esc(row.manual_score == null ? "0" : row.manual_score) +
+                '</td><td>' + esc(row.score == null ? "—" : row.score) + ' / ' + esc(row.max_score) +
+                '</td><td>' + (row.requires_manual_review ? "Pending" : "Ready") + '</td></tr>';
+            }).join("") + '</tbody></table>'
+          : '<p class="muted">No submitted attempts are available for review yet.</p>';
         await loadManualReviews(id);
       } catch (error) { status(error.message, true); }
     }
@@ -117,7 +129,7 @@
     '<div id="cbt-staff-message" class="notice notice--info" hidden role="status"></div>' +
     '<h3>Your assigned examinations</h3><div class="table-wrap"><table class="table"><thead><tr><th>Examination</th><th>Scheduled start</th><th>Status</th><th></th></tr></thead><tbody id="cbt-staff-exams"></tbody></table></div>' +
     '<section id="cbt-staff-selected" class="panel mt-2" hidden><h3 id="cbt-staff-selected-title">Selected exam</h3>' +
-      '<section id="cbt-teacher-panel" hidden><h4>Questions</h4><ol id="cbt-staff-question-list"></ol>' +
+      '<section id="cbt-teacher-panel" hidden><h4>Questions and answer key</h4><ol id="cbt-staff-question-list"></ol><section class="mt-2"><h4>Automatically marked results</h4><p class="muted">Review submitted scores before sending your report to the administrator.</p><div id="cbt-staff-results-review" class="table-wrap"><p class="muted">Loading marked results…</p></div></section>' +
         '<form id="cbt-staff-add-question" class="mt-2"><h4>Add question</h4><div class="grid grid--2">' +
           '<label>Type<select class="form-control" name="question_type"><option value="mcq">Multiple choice</option><option value="true_false">True / False</option><option value="short_answer">Short answer</option></select></label>' +
           '<label>Marks<input class="form-control" name="marks" type="number" min="0.5" max="100" step="0.5" value="1" required></label>' +
