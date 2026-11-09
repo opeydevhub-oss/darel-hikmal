@@ -369,6 +369,73 @@ var PortalDashboard = {
       var panelId = button.closest("[data-dash-panel]").getAttribute("data-dash-panel");
       button.addEventListener("click", function () { self.startPanelAction(panelId, button.getAttribute("data-panel-action")); });
     });
+    portalQueryAll("[data-record-edit]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        self.openRecordEditor(button.getAttribute("data-record-edit"), button.getAttribute("data-record-id"));
+      });
+    });
+  },
+
+  openRecordEditor: function (kind, id) {
+    var record = kind === "pupils"
+      ? (this.config.adminStudents || []).find(function (item) { return item.id === id; })
+      : (this.config.adminStaff || []).find(function (item) { return item.id === id; });
+    if (!record) { this.refresh(); return; }
+    var dialog = document.getElementById("portal-record-editor");
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = "portal-record-editor";
+      dialog.className = "portal-editor-dialog";
+      document.body.appendChild(dialog);
+    }
+    var fields = kind === "pupils"
+      ? [["admission_no","Admission number","text",true],["first_name","First name","text",true],["last_name","Last name","text",true],["date_of_birth","Date of birth","date",false],["gender","Gender","gender",false],["status","Status","status",true]]
+      : [["staff_no","Staff number","text",true],["full_name","Full name","text",true],["job_title","Job title","text",false],["status","Status","status",true]];
+    var html = '<form id="portal-record-editor-form" class="form-stack" data-kind="' + kind + '" data-id="' + portalEscape(id) + '">' +
+      '<div class="panel__head"><div><span class="eyebrow">School records</span><h2>Edit ' + (kind === "pupils" ? "student" : "staff") +
+      ' record</h2></div><button type="button" class="btn btn--ghost btn--small" data-editor-close>Close</button></div>';
+    fields.forEach(function (field) {
+      var value = record[field[0]] == null ? "" : String(record[field[0]]);
+      html += '<label>' + field[1];
+      if (field[2] === "gender") {
+        html += '<select class="form-control" name="' + field[0] + '"><option value="">Not recorded</option>' +
+          ["Female","Male","Other"].map(function (v) { return '<option value="' + v + '"' + (value.toLowerCase() === v.toLowerCase() ? " selected" : "") + '>' + v + '</option>'; }).join("") + '</select>';
+      } else if (field[2] === "status") {
+        html += '<select class="form-control" name="' + field[0] + '" required>' +
+          ["active","inactive","graduated","transferred","suspended"].map(function (v) { return '<option value="' + v + '"' + (value.toLowerCase() === v ? " selected" : "") + '>' + v.charAt(0).toUpperCase() + v.slice(1) + '</option>'; }).join("") + '</select>';
+      } else {
+        html += '<input class="form-control" type="' + field[2] + '" name="' + field[0] + '"' +
+          (field[3] ? " required" : "") + ' value="' + portalEscape(value) + '">';
+      }
+      html += '</label>';
+    });
+    html += '<p class="muted" data-editor-message role="status"></p><div class="btn-row"><button class="btn btn--primary" type="submit">Save changes</button><button class="btn btn--outline-navy" type="button" data-editor-close>Cancel</button></div></form>';
+    dialog.innerHTML = html;
+    if (!dialog.open) dialog.showModal();
+    dialog.querySelectorAll("[data-editor-close]").forEach(function (button) {
+      button.addEventListener("click", function () { dialog.close(); });
+    });
+    var self = this;
+    dialog.querySelector("form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      var form = event.currentTarget;
+      var message = form.querySelector("[data-editor-message]");
+      var submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      message.textContent = "Saving changes…";
+      var payload = Object.fromEntries(new FormData(form).entries());
+      if (kind === "pupils" && !payload.date_of_birth) payload.date_of_birth = null;
+      var request = kind === "pupils" ? PortalData.updateStudent(id, payload) : PortalData.updateStaff(id, payload);
+      request.then(function (result) {
+        if (result.error) throw new Error(result.error.message || "Could not save this record.");
+        message.textContent = "Changes saved.";
+        dialog.close();
+        self.refresh();
+      }).catch(function (error) {
+        message.textContent = error.message || "Could not save this record.";
+        submit.disabled = false;
+      });
+    });
   },
 
   panelBody: function (panel, forcedEmpty) {
@@ -405,19 +472,25 @@ var PortalDashboard = {
     }).join("");
 
     var body = rows.map(function (row, rowIndex) {
-      return "<tr data-table-row=\"" + rowIndex + "\">" + row.map(function (cell, index) {
+      var cells = row.map(function (cell, index) {
         var first = index === 0 ? ' scope="row"' : "";
         var tone = statusTone(cell);
         var content = tone
           ? '<span class="badge badge--' + tone + '">' + portalEscape(cell) + "</span>"
           : portalEscape(cell);
         return "<td" + first + ' class="' + (index > 1 ? "wrap" : "") + '">' + content + "</td>";
-      }).join("") + "</tr>";
+      }).join("");
+      var recordId = panel.rowIds && panel.rowIds[rowIndex];
+      var edit = recordId && (panel.id === "pupils" || panel.id === "staff")
+        ? '<td><button class="btn btn--small btn--outline-navy" type="button" data-record-edit="' +
+          panel.id + '" data-record-id="' + portalEscape(recordId) + '">Edit</button></td>'
+        : "";
+      return "<tr data-table-row=\"" + rowIndex + "\">" + cells + edit + "</tr>";
     }).join("");
 
     return '<div class="table-wrap"><table class="table">' +
       "<caption>" + portalEscape(panel.caption || "Data") + "</caption>" +
-      "<thead><tr>" + head + "</tr></thead><tbody>" + body + "</tbody></table></div>";
+      "<thead><tr>" + head + (panel.rowIds ? "<th scope=\"col\">Actions</th>" : "") + "</tr></thead><tbody>" + body + "</tbody></table></div>";
   },
 
   recordsMarkup: function (records) {
