@@ -1194,6 +1194,10 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
     var client = c(); if (!client) { return Promise.resolve(nc()); }
     return client.from("subjects").select("id,name").order("name");
   };
+  PortalData.createSubject = function (payload) {
+    var client = c(); if (!client) { return Promise.resolve(nc()); }
+    return client.from("subjects").insert(payload).select("id,name,code,is_active").single();
+  };
   PortalData.getParentNames = function () {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
     return client.from("profiles").select("id,full_name").eq("role", "parent");
