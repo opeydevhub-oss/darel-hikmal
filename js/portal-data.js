@@ -1190,6 +1190,44 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
   };
 
   /* ---- Admin lookups used by forms ---- */
+  PortalData.getAcademicSessions = function () {
+    var client = c(); if (!client) { return Promise.resolve(nc()); }
+    return client.from("academic_sessions").select("id,name,start_date,end_date,is_current").order("start_date", { ascending: false });
+  };
+  PortalData.getAcademicTerms = function () {
+    var client = c(); if (!client) { return Promise.resolve(nc()); }
+    return client.from("terms").select("id,session_id,name,start_date,end_date,is_current").order("start_date", { ascending: false });
+  };
+  PortalData.activateAcademicSession = function (payload) {
+    var client = c(); if (!client) { return Promise.resolve(nc()); }
+    return client.from("academic_sessions").select("id").eq("name", payload.name).maybeSingle()
+      .then(function (existing) {
+        if (existing.error) return { data: null, error: existing.error };
+        var save = existing.data
+          ? client.from("academic_sessions").update({ start_date: payload.start_date, end_date: payload.end_date, is_current: true }).eq("id", existing.data.id).select("id").single()
+          : client.from("academic_sessions").insert({ name: payload.name, start_date: payload.start_date, end_date: payload.end_date, is_current: true }).select("id").single();
+        return save.then(function (saved) {
+          if (saved.error || !saved.data) return { data: null, error: saved.error || { message: "Could not save academic session." } };
+          var sessionId = saved.data.id;
+          return client.from("academic_sessions").update({ is_current: false }).neq("id", sessionId)
+            .then(function (clearSessions) {
+              if (clearSessions.error) return { data: null, error: clearSessions.error };
+              return client.from("terms").update({ is_current: false }).eq("is_current", true)
+                .then(function (clearTerms) {
+                  if (clearTerms.error) return { data: null, error: clearTerms.error };
+                  return client.from("terms").insert({
+                    session_id: sessionId, name: payload.term_name,
+                    start_date: payload.start_date, end_date: payload.end_date, is_current: true
+                  }).select("id").single();
+                }).then(function (termResult) {
+                  if (termResult.error) return { data: null, error: termResult.error };
+                  return { data: { session_id: sessionId, term_id: termResult.data.id }, error: null };
+                });
+            });
+        });
+      });
+  };
+
   PortalData.getSubjects = function () {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
     return client.from("subjects").select("id,name").order("name");
