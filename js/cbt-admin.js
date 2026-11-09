@@ -123,28 +123,19 @@
     catch (error) { message(error.message, "error"); }
   }
   function reveal() {
-    var section = document.getElementById("cbt-admin-panel");
-    section.hidden = false;
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (window.PortalDashboard) window.PortalDashboard.activate("cbt-administration", false);
+    else {
+      var section = document.getElementById("cbt-admin-panel");
+      section.hidden = false;
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     if (!state.data) loadDashboard();
   }
-
-  var head = main.querySelector(".dash__head");
-  var link = document.createElement("a");
-  link.className = "btn btn--primary btn--small";
-  link.href = "#cbt-administration";
-  link.textContent = "CBT Management";
-  link.addEventListener("click", function (event) {
-    event.preventDefault();
-    reveal();
-  });
-  var headerActions = head && head.querySelector(".btn-row");
-  if (headerActions) headerActions.appendChild(link);
 
   var panel = document.createElement("section");
   panel.id = "cbt-admin-panel";
   panel.className = "panel mt-2";
-  panel.hidden = false;
+  panel.hidden = true;
   panel.innerHTML =
     '<div class="panel__head"><div><span class="eyebrow">Examination management</span><h2 id="cbt-administration">CBT Management</h2><p class="muted">Create exams, manage questions, assign staff, issue PINs and review results.</p></div>' +
     '<button type="button" class="btn btn--outline-navy btn--small" id="cbt-sync-students">Sync student records</button></div>' +
