@@ -232,8 +232,8 @@ var PortalDashboard = {
 
   panelById: function (id) {
     if (!this.config) { return null; }
-    if (this.role === "admin" && id === "cbt-administration") {
-      return { id: id, title: "CBT Management" };
+    if (this.role === "admin" && (id === "cbt-administration" || id === "academic-sessions")) {
+      return { id: id, title: id === "academic-sessions" ? "Academic sessions" : "CBT Management" };
     }
     return this.config.panels.filter(function (panel) { return panel.id === id; })[0] || null;
   },
@@ -249,7 +249,10 @@ var PortalDashboard = {
 
     if (!nav || !this.config.panels) { return; }
     var menuItems = this.config.panels.slice();
-    if (this.role === "admin") menuItems.push({ id: "cbt-administration", title: "CBT Management", kind: "cbt" });
+    if (this.role === "admin") {
+      menuItems.push({ id: "academic-sessions", title: "Academic sessions", kind: "academic-sessions" });
+      menuItems.push({ id: "cbt-administration", title: "CBT Management", kind: "cbt" });
+    }
     nav.innerHTML = menuItems.map(function (panel) {
       return '<a class="dash__nav-link" href="#' + panel.id + '" data-dash-link="' + panel.id + '">' +
         portalIcon(panel.kind === "register" ? "attendance" : panel.id) +
@@ -311,6 +314,8 @@ var PortalDashboard = {
     });
     var cbtPanel = portalQuery("#cbt-admin-panel");
     if (cbtPanel) cbtPanel.hidden = id !== "cbt-administration";
+    var academicPanel = portalQuery("#panel-academic-sessions");
+    if (academicPanel) academicPanel.hidden = id !== "academic-sessions";
 
     var target = id === "cbt-administration" ? cbtPanel : portalQuery("#panel-" + id);
     if (target) {
@@ -384,12 +389,25 @@ var PortalDashboard = {
         "</section>";
     }).join("");
 
+    if (this.role === "admin") {
+      container.insertAdjacentHTML("beforeend", self.academicSessionsMarkup());
+      self.loadAcademicSessions();
+    }
+
     portalQueryAll("[data-dash-panel]").forEach(function (section) {
       var panel = self.panelById(section.getAttribute("data-dash-panel"));
       if (panel && panel.kind === "register") { self.wireRegister(section, panel); }
     });
 
     // Wire table action buttons (admin CRUD).
+    var academicForm = portalQuery("#academic-session-form");
+    if (academicForm) {
+      academicForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        self.saveAcademicSession(new FormData(academicForm));
+      });
+    }
+
     portalQueryAll("[data-panel-action]").forEach(function (button) {
       var panelId = button.closest("[data-dash-panel]").getAttribute("data-dash-panel");
       button.addEventListener("click", function () {
@@ -409,6 +427,77 @@ var PortalDashboard = {
       button.addEventListener("click", function () {
         self.openClassEditor(button.getAttribute("data-class-edit"));
       });
+    });
+  },
+
+  academicSessionsMarkup: function () {
+    return '<section class="panel academic-session-panel" id="panel-academic-sessions" data-dash-panel="academic-sessions" hidden aria-labelledby="heading-academic-sessions" tabindex="-1">' +
+      '<div class="panel__head"><div><span class="eyebrow">School calendar</span><h2 id="heading-academic-sessions">Academic sessions</h2><p>Create the school year and select its current term. This unlocks class and teacher allocations.</p></div></div>' +
+      '<form id="academic-session-form" class="form-stack">' +
+      '<label>Academic year<input class="form-control" name="name" placeholder="e.g. 2026/2027" required maxlength="30"></label>' +
+      '<div class="form-grid"><label>Start date<input class="form-control" type="date" name="start_date" required></label><label>End date<input class="form-control" type="date" name="end_date" required></label></div>' +
+      '<label>Current term<select class="form-control" name="term_name" required><option value="First Term">First Term</option><option value="Second Term">Second Term</option><option value="Third Term">Third Term</option></select></label>' +
+      '<p class="muted">Choose the dates using your phone calendar. Saving makes this the active academic session and term.</p>' +
+      '<p class="notice notice--warn" data-session-message role="status" aria-live="polite">No academic session has been set yet.</p>' +
+      '<button class="btn btn--primary" type="submit" data-session-save>Save and activate session</button></form>' +
+      '<div class="academic-session-history"><h3>Saved academic sessions</h3><div data-session-list><p class="muted">Loading sessions…</p></div></div></section>';
+  },
+
+  loadAcademicSessions: function () {
+    var list = portalQuery("[data-session-list]");
+    var message = portalQuery("[data-session-message]");
+    if (!list || !window.PortalData) return;
+    Promise.all([PortalData.getAcademicSessions(), PortalData.getAcademicTerms()])
+      .then(function (results) {
+        var failed = results.find(function (item) { return item.error; });
+        if (failed) throw new Error(failed.error.message || "Could not load academic sessions.");
+        var sessions = results[0].data || [];
+        var terms = results[1].data || [];
+        var currentTerm = terms.find(function (term) { return term.is_current; });
+        var currentSession = sessions.find(function (session) { return session.is_current; });
+        if (message) {
+          message.textContent = currentSession
+            ? "Current session: " + currentSession.name + (currentTerm ? " · " + currentTerm.name : " · No current term")
+            : "No academic session has been set yet.";
+          message.className = currentSession ? "notice notice--success" : "notice notice--warn";
+        }
+        list.innerHTML = sessions.length ? '<ul class="academic-session-list">' + sessions.map(function (session) {
+          var term = terms.find(function (item) { return item.session_id === session.id && item.is_current; });
+          return '<li><strong>' + portalEscape(session.name) + '</strong><span>' + portalEscape(session.start_date) + ' to ' + portalEscape(session.end_date) + '</span><span>' + (session.is_current ? '<b>Current</b>' : 'Previous') + (term ? ' · ' + portalEscape(term.name) : '') + '</span></li>';
+        }).join("") + '</ul>' : '<p class="muted">No saved academic sessions yet.</p>';
+      })
+      .catch(function (error) {
+        list.innerHTML = '<p class="notice notice--error">' + portalEscape(error.message) + '</p>';
+      });
+  },
+
+  saveAcademicSession: function (formData) {
+    var self = this;
+    var payload = {
+      name: String(formData.get("name") || "").trim(),
+      start_date: String(formData.get("start_date") || ""),
+      end_date: String(formData.get("end_date") || ""),
+      term_name: String(formData.get("term_name") || "First Term")
+    };
+    var message = portalQuery("[data-session-message]");
+    var button = portalQuery("[data-session-save]");
+    if (!payload.name || !payload.start_date || !payload.end_date || payload.end_date < payload.start_date) {
+      if (message) { message.textContent = "Enter an academic year and valid start and end dates."; message.className = "notice notice--error"; }
+      return;
+    }
+    button.disabled = true;
+    button.textContent = "Saving…";
+    if (message) { message.textContent = "Saving the academic session…"; message.className = "notice"; }
+    PortalData.activateAcademicSession(payload).then(function (result) {
+      if (result.error) throw new Error(result.error.message || "Could not save academic session.");
+      if (message) { message.textContent = "Academic session and current term saved. Class and teacher assignments are now enabled."; message.className = "notice notice--success"; }
+      self.refresh();
+      self.loadAcademicSessions();
+    }).catch(function (error) {
+      if (message) { message.textContent = error.message || "Could not save the academic session."; message.className = "notice notice--error"; }
+    }).finally(function () {
+      button.disabled = false;
+      button.textContent = "Save and activate session";
     });
   },
 
