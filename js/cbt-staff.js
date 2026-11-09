@@ -100,7 +100,7 @@
         questions = result.questions || [];
         document.getElementById("cbt-staff-question-list").innerHTML = questions.length
           ? questions.map(function (q) { return "<li><strong>" + esc(q.position) + ". " + esc(q.prompt) +
-            "</strong><span class='muted'> · " + esc(q.question_type) + " · " + esc(q.marks) + " marks</span></li>"; }).join("")
+            "</strong><span class='muted'> · " + esc(q.question_type) + " · " + esc(q.marks) + " marks</span><p class='muted'>Correct answer: " + esc(typeof q.answer_key === "object" ? JSON.stringify(q.answer_key) : q.answer_key) + "</p></li>"; }).join("")
           : "<li class='muted'>No questions added yet.</li>";
         document.getElementById("cbt-staff-position").value = String(questions.length + 1);
         var review = await call("staff.exam_review", { exam_id: id });
