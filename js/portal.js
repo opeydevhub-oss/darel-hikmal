@@ -367,11 +367,22 @@ var PortalDashboard = {
     // Wire table action buttons (admin CRUD).
     portalQueryAll("[data-panel-action]").forEach(function (button) {
       var panelId = button.closest("[data-dash-panel]").getAttribute("data-dash-panel");
-      button.addEventListener("click", function () { self.startPanelAction(panelId, button.getAttribute("data-panel-action")); });
+      button.addEventListener("click", function () {
+        if (panelId === "classes" && button.getAttribute("data-panel-action") === "add") {
+          self.openClassEditor(null);
+        } else if (typeof self.startPanelAction === "function") {
+          self.startPanelAction(panelId, button.getAttribute("data-panel-action"));
+        }
+      });
     });
     portalQueryAll("[data-record-edit]").forEach(function (button) {
       button.addEventListener("click", function () {
         self.openRecordEditor(button.getAttribute("data-record-edit"), button.getAttribute("data-record-id"));
+      });
+    });
+    portalQueryAll("[data-class-edit]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        self.openClassEditor(button.getAttribute("data-class-edit"));
       });
     });
   },
@@ -446,6 +457,124 @@ var PortalDashboard = {
     });
   },
 
+  openClassEditor: function (classId) {
+    var self = this;
+    var isEdit = Boolean(classId);
+    var classRecord = isEdit
+      ? (this.config.adminClasses || []).find(function (item) { return item.id === classId; })
+      : { name: "", level: "", arm: "" };
+    if (!classRecord) { this.refresh(); return; }
+
+    var dialog = document.getElementById("portal-class-editor");
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = "portal-class-editor";
+      dialog.className = "portal-editor-dialog portal-class-editor";
+      document.body.appendChild(dialog);
+    }
+
+    var assignedStudents = (this.config.adminEnrolments || [])
+      .filter(function (item) { return item.class_id === classId; })
+      .map(function (item) { return item.student_id; });
+    var assignments = (this.config.adminTeachingAssignments || [])
+      .filter(function (item) { return item.class_id === classId; });
+    var staffList = (this.config.adminStaff || []).filter(function (item) { return item.status === "active"; });
+    var students = (this.config.adminStudents || []).filter(function (item) { return item.status === "active"; });
+    var subjects = this.config.adminSubjects || [];
+
+    var html = '<form id="portal-class-editor-form" class="form-stack">' +
+      '<div class="panel__head"><div><span class="eyebrow">Class management</span><h2>' +
+      (isEdit ? "Edit class and allocations" : "Create class and allocations") +
+      '</h2><p>Choose existing pupils and assign teachers to subjects.</p></div>' +
+      '<button type="button" class="btn btn--ghost btn--small" data-class-close>Close</button></div>' +
+      '<label>Class name<input class="form-control" name="name" required maxlength="80" value="' + portalEscape(classRecord.name || "") + '"></label>' +
+      '<label>Level / year group<input class="form-control" name="level" required maxlength="40" value="' + portalEscape(classRecord.level || "") + '"></label>' +
+      '<label>Arm (optional)<input class="form-control" name="arm" maxlength="40" value="' + portalEscape(classRecord.arm || "") + '"></label>' +
+      '<section class="class-editor-section"><h3>Existing students</h3><p class="muted">Tick every student who belongs to this class for the current academic session.</p>' +
+      (students.length ? '<div class="class-editor-list">' + students.map(function (student) {
+        var name = [student.first_name, student.last_name].filter(Boolean).join(" ");
+        return '<label class="class-editor-choice"><input type="checkbox" name="student_ids" value="' + portalEscape(student.id) + '"' +
+          (assignedStudents.indexOf(student.id) !== -1 ? " checked" : "") + '><span><strong>' + portalEscape(name) +
+          '</strong><small>' + portalEscape(student.admission_no || "No admission number") + '</small></span></label>';
+      }).join("") + '</div>' : '<p class="muted">No active student records are available.</p>') +
+      '</section><section class="class-editor-section"><h3>Teachers and subjects</h3>' +
+      '<p class="muted">Select one or more subjects for each teacher. You can designate one class teacher.</p>' +
+      (staffList.length && subjects.length ? '<div class="class-editor-list">' + staffList.map(function (staff) {
+        var staffAssignments = assignments.filter(function (item) { return item.staff_id === staff.id; });
+        var assignedSubjectIds = staffAssignments.map(function (item) { return item.subject_id; });
+        var isClassTeacher = staffAssignments.some(function (item) { return item.is_class_teacher; });
+        return '<fieldset class="class-editor-teacher"><legend>' + portalEscape(staff.full_name) + ' · ' + portalEscape(staff.staff_no) + '</legend>' +
+          '<label class="class-editor-choice class-editor-lead"><input type="checkbox" name="class_teacher" value="' + portalEscape(staff.id) + '"' +
+          (isClassTeacher ? " checked" : "") + '><span>Designate as class teacher</span></label>' +
+          '<div class="class-editor-subjects">' + subjects.map(function (subject) {
+            return '<label class="class-editor-choice"><input type="checkbox" name="teacher_subject" value="' + portalEscape(staff.id + "|" + subject.id) + '"' +
+              (assignedSubjectIds.indexOf(subject.id) !== -1 ? " checked" : "") + '><span>' + portalEscape(subject.name) + '</span></label>';
+          }).join("") + '</div></fieldset>';
+      }).join("") + '</div>' : '<p class="muted">Add active staff and subjects before assigning teachers.</p>') +
+      '</section>' +
+      (this.config.adminSessionId ? '<p class="muted">Assignments apply to the current academic session.</p>' :
+        '<p class="notice notice--warn">No current academic session is set. You can save class details, but cannot assign students or teachers yet.</p>') +
+      '<p class="muted" data-class-message role="status"></p><div class="btn-row">' +
+      '<button class="btn btn--primary" type="submit">Save class and allocations</button>' +
+      '<button class="btn btn--outline-navy" type="button" data-class-close>Cancel</button></div></form>';
+
+    dialog.innerHTML = html;
+    if (!dialog.open) dialog.showModal();
+    dialog.querySelectorAll("[data-class-close]").forEach(function (button) {
+      button.addEventListener("click", function () { dialog.close(); });
+    });
+
+    dialog.querySelector("form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      var form = event.currentTarget;
+      var message = form.querySelector("[data-class-message]");
+      var submit = form.querySelector('[type="submit"]');
+      var formData = new FormData(form);
+      var teacherSubjects = formData.getAll("teacher_subject");
+      var classTeachers = formData.getAll("class_teacher");
+      var classTeacherIds = new Set(classTeachers);
+      var teacherAssignments = teacherSubjects.map(function (value) {
+        var parts = String(value).split("|");
+        return { staff_id: parts[0], subject_id: parts[1], is_class_teacher: classTeacherIds.has(parts[0]) };
+      });
+      var hasInvalidClassTeacher = classTeachers.some(function (staffId) {
+        return !teacherSubjects.some(function (value) { return String(value).split("|")[0] === staffId; });
+      });
+      if (hasInvalidClassTeacher) {
+        message.textContent = "A class teacher must also be assigned at least one subject.";
+        return;
+      }
+      if (classTeachers.length > 1) {
+        message.textContent = "Choose only one class teacher.";
+        return;
+      }
+      var studentIds = formData.getAll("student_ids");
+      if (!self.config.adminSessionId && (studentIds.length || teacherAssignments.length)) {
+        message.textContent = "Set the current academic session before assigning students or teachers.";
+        return;
+      }
+      submit.disabled = true;
+      message.textContent = "Saving class and allocations…";
+      PortalData.saveClassRoster({
+        id: classId,
+        name: formData.get("name"),
+        level: formData.get("level"),
+        arm: formData.get("arm"),
+        session_id: self.config.adminSessionId,
+        student_ids: studentIds,
+        teacher_assignments: teacherAssignments
+      }).then(function (result) {
+        if (result.error) throw new Error(result.error.message || "Could not save this class.");
+        message.textContent = "Class, student membership and teacher allocations saved.";
+        dialog.close();
+        self.refresh();
+      }).catch(function (error) {
+        message.textContent = error.message || "Could not save the class allocations.";
+        submit.disabled = false;
+      });
+    });
+  },
+
   panelBody: function (panel, forcedEmpty) {
     var emptyMessage = panel.emptyMessage || "There is nothing to show here yet.";
 
@@ -492,7 +621,9 @@ var PortalDashboard = {
       var edit = recordId && (panel.id === "pupils" || panel.id === "staff")
         ? '<td><button class="btn btn--small btn--outline-navy" type="button" data-record-edit="' +
           panel.id + '" data-record-id="' + portalEscape(recordId) + '">Edit</button></td>'
-        : "";
+        : recordId && panel.id === "classes"
+          ? '<td><button class="btn btn--small btn--outline-navy" type="button" data-class-edit="' + portalEscape(recordId) + '">Edit class</button></td>'
+          : "";
       return "<tr data-table-row=\"" + rowIndex + "\">" + cells + edit + "</tr>";
     }).join("");
 
