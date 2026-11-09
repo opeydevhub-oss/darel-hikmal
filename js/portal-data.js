@@ -537,7 +537,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
 
         return Promise.all([
           client.from("teaching_assignments")
-            .select("classes!inner(id,name,level,arm),subjects!inner(name)")
+            .select("session_id,is_class_teacher,classes!inner(id,name,level,arm),subjects!inner(name)")
             .eq("staff_id", staff.id),
 
           client.from("assignments")
@@ -575,12 +575,15 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             };
           }
 
-          var taught = r[0].data || [];
+          var allTaught = r[0].data || [];
           var assignments = r[1].data || [];
           var materials = r[2].data || [];
           var announcements = r[3].data || [];
           var allSubjects = r[4].data || [];
           var term = r[5].data;
+          var taught = term && term.session_id
+            ? allTaught.filter(function (item) { return item.session_id === term.session_id; })
+            : [];
 
           var classIds = [];
           var classOptions = [];
