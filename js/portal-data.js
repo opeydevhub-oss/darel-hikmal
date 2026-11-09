@@ -894,7 +894,6 @@ var term = r[7].data;
           columns: ["Admission no.", "Pupil", "Class", "Status"],
           rows: studentRows,
           rowIds: students.map(function (s) { return s.id; }),
-          actions: ["add", "edit", "delete"],
           emptyMessage: "No pupils match this search."
         },
         {
@@ -903,7 +902,6 @@ var term = r[7].data;
           columns: ["Staff no.", "Name", "Job title", "Status"],
           rows: staffRows,
           rowIds: staffList.map(function (s) { return s.id; }),
-          actions: ["add", "edit", "delete"],
           emptyMessage: "No staff records match this search."
         },
         {
