@@ -142,7 +142,7 @@
   var panel = document.createElement("section");
   panel.id = "cbt-admin-panel";
   panel.className = "panel mt-2";
-  panel.hidden = true;
+  panel.hidden = false;
   panel.innerHTML =
     '<div class="panel__head"><div><span class="eyebrow">Examination management</span><h2 id="cbt-administration">CBT Management</h2><p class="muted">Create exams, manage questions, assign staff, issue PINs and review results.</p></div>' +
     '<button type="button" class="btn btn--outline-navy btn--small" id="cbt-sync-students">Sync student records</button></div>' +
@@ -160,7 +160,7 @@
         '<button class="btn btn--primary" type="submit">Create draft examination</button></form></section>' +
       '<section class="panel"><h3>Examinations</h3><div class="table-wrap"><table class="table"><thead><tr><th>Exam</th><th>Class</th><th>Subject</th><th>Status</th><th></th></tr></thead><tbody id="cbt-exams-body"><tr><td colspan="5">Loading…</td></tr></tbody></table></div></section>' +
     '</div>' +
-    '<section id="cbt-selected-exam" class="panel mt-2" hidden><div class="panel__head"><div><h3 id="cbt-selected-title">Selected examination</h3><p id="cbt-selected-meta" class="muted"></p></div><div class="btn-row"><button id="cbt-schedule-button" type="button" class="btn btn--primary">Schedule exam</button><button id="cbt-pin-button" type="button" class="btn btn--outline-navy">Generate session PIN</button><button id="cbt-results-button" type="button" class="btn btn--ghost">View results</button></div></div>' +
+    '<section id="cbt-selected-exam" class="panel mt-2" hidden><div class="panel__head"><div><h3 id="cbt-selected-title">Selected examination</h3><p id="cbt-selected-meta" class="muted"></p></div><div class="btn-row"><button id="cbt-schedule-button" type="button" class="btn btn--primary">Schedule exam</button><button id="cbt-pin-button" type="button" class="btn btn--outline-navy">Generate session PIN</button><button id="cbt-close-button" type="button" class="btn btn--outline-navy" hidden>Close exam</button><button id="cbt-release-button" type="button" class="btn btn--primary" hidden>Release results</button><button id="cbt-results-button" type="button" class="btn btn--ghost">View results</button></div></div>' +
       '<div id="cbt-pin-output" class="notice notice--info" hidden></div><h4>Questions</h4><ol id="cbt-question-list"><li class="muted">Loading questions…</li></ol>' +
       '<form id="cbt-add-question" class="mt-2"><h4>Add question</h4><div class="grid grid--2">' +
         '<label>Question type<select class="form-control" name="question_type"><option value="mcq">Multiple choice</option><option value="true_false">True / False</option><option value="short_answer">Short answer (manual review)</option></select></label>' +
@@ -291,5 +291,6 @@
     }
   });
 
+  loadDashboard();
   if (location.hash === "#cbt-administration") reveal();
 })();
