@@ -114,6 +114,9 @@
       " · " + exam.status;
     document.getElementById("cbt-schedule-button").hidden = exam.status !== "draft";
     document.getElementById("cbt-pin-button").hidden = !["scheduled", "open"].includes(exam.status);
+    document.getElementById("cbt-close-button").hidden = !["scheduled", "open"].includes(exam.status) ||
+      Date.now() < new Date(exam.ends_at).getTime();
+    document.getElementById("cbt-release-button").hidden = exam.status !== "closed";
     fillSelect(document.getElementById("cbt-invigilator-exam"), [exam], function (x) { return x.title; });
     try { await loadQuestions(id); message("Examination selected.", "info"); }
     catch (error) { message(error.message, "error"); }
@@ -190,6 +193,22 @@
         await loadDashboard();
         await openExam(state.exam.id);
         message("Examination scheduled successfully.", "info");
+      } catch (error) { message(error.message, "error"); }
+    }
+    if (event.target.id === "cbt-close-button" && state.exam) {
+      try {
+        await call("admin.close_exam", { exam_id: state.exam.id });
+        await loadDashboard();
+        await openExam(state.exam.id);
+        message("Examination closed. Unfinished attempts were expired.", "info");
+      } catch (error) { message(error.message, "error"); }
+    }
+    if (event.target.id === "cbt-release-button" && state.exam) {
+      try {
+        await call("admin.release_results", { exam_id: state.exam.id });
+        await loadDashboard();
+        await openExam(state.exam.id);
+        message("Results released. Students can now view their published scores.", "info");
       } catch (error) { message(error.message, "error"); }
     }
     if (event.target.id === "cbt-pin-button" && state.exam) {
