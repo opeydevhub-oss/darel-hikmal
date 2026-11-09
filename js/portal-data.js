@@ -781,7 +781,8 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
       client.from("fee_records").select("id,student_id,term_id,fee_type,amount_due_kobo,status", { count: "exact" }),
       client.from("payments").select("id,fee_record_id,amount_kobo,paid_at,status", { count: "exact" }),
       client.from("announcements").select("id,title,body,audience,status,created_at").order("created_at", { ascending: false }),
-      currentTerm(client)
+      currentTerm(client),
+      client.from("enrolments").select("student_id,class_id,session_id,status").eq("status", "active")
     ]).then(function (r) {
       
 var failedQuery = r.find(function (item) {
@@ -806,6 +807,12 @@ var fees = r[4];
 var payments = r[5];
 var announcements = r[6].data || [];
 var term = r[7].data;
+var enrolments = r[8].data || [];
+var currentEnrolments = term && term.session_id
+  ? enrolments.filter(function (e) { return e.session_id === term.session_id; })
+  : [];
+var enrolmentByStudent = {};
+currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; });
 
       var classById = {}; classes.forEach(function (c) { classById[c.id] = c; });
       var studentById = {}; students.forEach(function (s) { studentById[s.id] = s; });
@@ -835,7 +842,7 @@ var term = r[7].data;
         return [
           s.admission_no || "—",
           [s.first_name, s.last_name].filter(Boolean).join(" ") || "—",
-          "—",
+          (enrolmentByStudent[s.id] && classById[enrolmentByStudent[s.id].class_id] ? classById[enrolmentByStudent[s.id].class_id].name : "Unassigned"),
           (s.status || "unknown").toUpperCase()
         ];
       });
@@ -950,6 +957,9 @@ var term = r[7].data;
           panels: panels,
           adminStudents: students,
           adminStaff: staffList,
+          adminClasses: classes,
+          adminEnrolments: currentEnrolments,
+          adminSessionId: term ? term.session_id : null,
           metaTerm: term ? term.name : "",
           metaSession: ""
         },
@@ -973,13 +983,36 @@ var term = r[7].data;
   };
   PortalData.updateStudent = function (id, payload) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("students").update(payload).eq("id", id).select("id,profile_id").single()
+    var studentPayload = Object.assign({}, payload);
+    var selectedClassId = studentPayload.class_id || "";
+    delete studentPayload.class_id;
+    return client.from("students").update(studentPayload).eq("id", id).select("id,profile_id").single()
       .then(function (res) {
-        if (res.error || !res.data || !res.data.profile_id) return res;
-        return client.from("profiles").update({ full_name: [payload.first_name, payload.last_name].filter(Boolean).join(" ") })
-          .eq("id", res.data.profile_id).then(function (profileRes) {
-            return profileRes.error ? { data: null, error: profileRes.error } : { data: res.data, error: null };
+        if (res.error || !res.data) return res;
+        var profileUpdate = res.data.profile_id
+          ? client.from("profiles").update({ full_name: [payload.first_name, payload.last_name].filter(Boolean).join(" ") }).eq("id", res.data.profile_id)
+          : Promise.resolve({ error: null });
+        return profileUpdate.then(function (profileRes) {
+          if (profileRes.error) return { data: null, error: profileRes.error };
+          return currentTerm(client).then(function (termRes) {
+            if (termRes.error) return { data: null, error: termRes.error };
+            if (!termRes.data || !termRes.data.session_id) {
+              return selectedClassId
+                ? { data: null, error: { message: "Set the current academic session before assigning a class." } }
+                : { data: res.data, error: null };
+            }
+            var sessionId = termRes.data.session_id;
+            if (selectedClassId) {
+              return client.from("enrolments").upsert({
+                student_id: id, class_id: selectedClassId, session_id: sessionId, status: "active"
+              }, { onConflict: "student_id,session_id" }).select().single()
+                .then(function (enrolRes) { return enrolRes.error ? { data: null, error: enrolRes.error } : { data: res.data, error: null }; });
+            }
+            return client.from("enrolments").update({ status: "withdrawn" })
+              .eq("student_id", id).eq("session_id", sessionId).eq("status", "active")
+              .then(function (enrolRes) { return enrolRes.error ? { data: null, error: enrolRes.error } : { data: res.data, error: null }; });
           });
+        });
       });
   };
   PortalData.deleteStudent = function (id) {
