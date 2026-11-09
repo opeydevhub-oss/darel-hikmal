@@ -554,6 +554,15 @@ var PortalDashboard = {
 
     dialog.innerHTML = html;
     if (!dialog.open) dialog.showModal();
+    var levelSelect = dialog.querySelector('select[name="level"]');
+    var classNameInput = dialog.querySelector('input[name="name"]');
+    var previousLevel = levelSelect.value;
+    levelSelect.addEventListener("change", function () {
+      if (!classNameInput.value.trim() || classNameInput.value === previousLevel || standardLevels.indexOf(classNameInput.value) !== -1) {
+        classNameInput.value = levelSelect.value;
+      }
+      previousLevel = levelSelect.value;
+    });
     dialog.querySelectorAll("[data-class-close]").forEach(function (button) {
       button.addEventListener("click", function () { dialog.close(); });
     });
@@ -597,6 +606,7 @@ var PortalDashboard = {
         });
         input.value = "";
         status.textContent = "Subject added. It is now available for teacher assignments and CBT exams.";
+        window.dispatchEvent(new Event("school:subjects-updated"));
       }).catch(function (error) {
         status.textContent = error.message || "Could not add the subject.";
       }).finally(function () {
@@ -647,6 +657,7 @@ var PortalDashboard = {
         if (result.error) throw new Error(result.error.message || "Could not save this class.");
         message.textContent = "Class, student membership and teacher allocations saved.";
         dialog.close();
+        window.dispatchEvent(new Event("school:class-roster-updated"));
         self.refresh();
       }).catch(function (error) {
         message.textContent = error.message || "Could not save the class allocations.";
