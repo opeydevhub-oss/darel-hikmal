@@ -152,7 +152,9 @@
     if (!target) return;
     target.innerHTML = questions.length ? questions.map(function (question) {
       var answer = question.answer_key;
-      var answerText = answer && typeof answer === "object" ? JSON.stringify(answer) : answer;
+      var answerText = question.question_type === "short_answer"
+        ? "Manual marking"
+        : (answer && typeof answer === "object" ? JSON.stringify(answer) : answer);
       return "<li><strong>" + esc(question.position) + ". " + esc(question.prompt) +
         "</strong><span class='muted'> · " + esc(question.question_type) + " · " +
         esc(question.marks) + " marks</span><p class='muted'>Correct answer: " +
@@ -273,6 +275,17 @@
   if (dash) dash.after(section);
 
   document.addEventListener("click", async function (event) {
+    var cbtOpenButton = event.target.closest("[data-cbt-open]");
+    if (cbtOpenButton) {
+      event.preventDefault();
+      if (window.PortalDashboard && window.PortalDashboard.config) {
+        window.PortalDashboard.activate("cbt-staff-tools", false);
+      } else {
+        section.hidden = false;
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      if (!data) load();
+    }
     var cbtNavigationLink = event.target.closest('[data-dash-link="cbt-staff-tools"]');
     if (cbtNavigationLink && !data) load();
     var examButton = event.target.closest("[data-staff-exam]");
