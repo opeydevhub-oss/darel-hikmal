@@ -1397,6 +1397,27 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
     return client.from("profiles").select("id,full_name").eq("role", "parent");
   };
 
+
+  PortalData.getParentProfiles = function () {
+    var client = c(); if (!client) return Promise.resolve(nc());
+    return client.from("profiles").select("id,email,full_name,phone")
+      .eq("role", "parent").eq("is_active", true).order("full_name");
+  };
+  PortalData.getStudentParentLinks = function (studentId) {
+    var client = c(); if (!client) return Promise.resolve(nc());
+    return client.from("parent_students")
+      .select("parent_id,relationship,is_primary,parents!inner(id,profile_id,full_name,phone)")
+      .eq("student_id", studentId);
+  };
+  PortalData.manageParent = function (payload) {
+    var client = c(); if (!client) return Promise.resolve(nc());
+    return client.functions.invoke("parent-management", { body: payload }).then(function (res) {
+      if (res.error) return { data: null, error: { message: res.error.message || "Parent link could not be saved." } };
+      if (res.data && res.data.error) return { data: null, error: { message: res.data.error } };
+      return { data: res.data && res.data.data ? res.data.data : res.data, error: null };
+    });
+  };
+
   window.PortalData = PortalData;
 
   /* School curriculum policy only (not pupil data): the grade key shown on
