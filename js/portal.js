@@ -608,6 +608,7 @@ var PortalDashboard = {
         '<label>Class<select class="form-control" name="assignment_class"><option value="">Choose class…</option>' + classOptions + '</select></label>' +
         '<label>Teaching role<select class="form-control" name="assignment_role"><option value="subject">Subject teacher</option><option value="class">Class teacher</option></select></label></div>' +
         '<label>Subject<select class="form-control" name="assignment_subject"><option value="">Choose subject…</option>' + subjectOptions + '</select></label>' +
+        '<div class="class-subject-add"><label for="staff-new-subject">Add a subject if it is not listed</label><div class="class-subject-add__row"><input class="form-control" id="staff-new-subject" maxlength="80" placeholder="e.g. Mathematics"><button type="button" class="btn btn--outline-navy btn--small" data-staff-add-subject>Add subject</button></div></div>' +
         '<p class="muted">For a class teacher, choose the subject they will also teach. Only one class teacher can be assigned to each class.</p>' +
         '<button type="button" class="btn btn--outline-navy btn--small" data-add-staff-assignment>Add teaching assignment</button>' +
         '<p class="muted" data-staff-assignment-message role="status"></p></section>';
@@ -634,6 +635,27 @@ var PortalDashboard = {
           button.disabled = false;
         });
       }
+      var addSubject = dialog.querySelector("[data-staff-add-subject]");
+      if (addSubject) addSubject.addEventListener("click", function () {
+        var input = dialog.querySelector("#staff-new-subject");
+        var subjectName = input.value.trim();
+        if (!subjectName) { assignmentMessage.textContent = "Enter a subject name first."; input.focus(); return; }
+        addSubject.disabled = true;
+        assignmentMessage.textContent = "Adding subject…";
+        var code = subjectName.toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 10) || "SUBJECT";
+        PortalData.createSubject({ name: subjectName, code: code, is_active: true }).then(function (result) {
+          if (result.error || !result.data) throw new Error(result.error ? result.error.message : "Could not add the subject.");
+          var option = document.createElement("option");
+          option.value = result.data.id;
+          option.textContent = result.data.name;
+          dialog.querySelector('[name="assignment_subject"]').appendChild(option);
+          dialog.querySelector('[name="assignment_subject"]').value = result.data.id;
+          input.value = "";
+          assignmentMessage.textContent = "Subject added. You can now assign it to this teacher.";
+        }).catch(function (error) {
+          assignmentMessage.textContent = error.message || "Could not add the subject.";
+        }).finally(function () { addSubject.disabled = false; });
+      });
       var addAssignment = dialog.querySelector("[data-add-staff-assignment]");
       if (addAssignment) addAssignment.addEventListener("click", function () {
         var classId = dialog.querySelector('[name="assignment_class"]').value;
