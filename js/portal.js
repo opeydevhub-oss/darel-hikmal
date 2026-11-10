@@ -1197,13 +1197,13 @@ var PortalDashboard = {
     }
     return '<form data-register-form novalidate>' +
       '<div class="toolbar"><div><label for="register-class">Class</label>' +
-      '<select class="filter-input" id="register-class">' +
+      '<select class="filter-input" id="register-class" name="registerClass">' +
       panel.classes.map(function (cl) {
         return '<option value="' + cl.id + '">' + portalEscape(cl.name + (cl.level ? " (" + cl.level + ")" : "")) + "</option>";
       }).join("") +
       "</select></div>" +
       '<div><label for="register-date">Date</label>' +
-      '<input class="filter-input" type="date" id="register-date" value="' + new Date().toISOString().split("T")[0] + '"></div>' +
+      '<input class="filter-input" type="date" id="register-date" name="registerDate" value="' + new Date().toISOString().split("T")[0] + '"></div>' +
       "</div>" +
       '<div class="table-wrap"><table class="table"><caption>Register</caption>' +
       '<thead><tr><th scope="col">Roll no.</th><th scope="col">Pupil</th><th scope="col">Subject</th><th scope="col">Status</th></tr></thead>' +
@@ -1255,9 +1255,9 @@ var PortalDashboard = {
           return;
         }
         var students = res.data;
-        PortalData.getAttendanceRows(classId, date).then(function (attRes) {
+        PortalData.getAttendanceRows(students.map(function (student) { return student.id; }), date).then(function (attRes) {
           var existing = {};
-          (attRes.data || []).forEach(function (a) { existing[a.student_id] = a; });
+          (attRes.data || []).forEach(function (a) { existing[a.enrolment_id] = a; });
           currentRows = students.map(function (s) {
             var a = existing[s.id];
             return { id: s.id, admission_number: s.admission_number, full_name: s.full_name, state: a ? a.status : "" };
@@ -1279,7 +1279,7 @@ var PortalDashboard = {
       var rows = portalQueryAll("[data-student]", section).map(function (tr) {
         var id = tr.getAttribute("data-student");
         var status = tr.querySelector("[data-att-status]").value;
-        return { student_id: Number(id), session_date: date, subject_id: null, status: status };
+        return { enrolment_id: id, attendance_date: date, status: status };
       });
 
       PortalData.upsertAttendance(rows).then(function (res) {
