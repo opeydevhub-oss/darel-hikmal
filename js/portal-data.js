@@ -33,6 +33,32 @@
     return { data: null, error: { message: "Supabase is not configured on this page." } };
   }
 
+  var CBT_API_URL = "https://gyrucocuozyhlnzgkzvd.supabase.co/functions/v1/cbt-api";
+  var CBT_API_KEY = "sb_publishable_tIWx7KNFDaAUEw2xQnJ3cQ_zwTPQ4eT";
+
+  function invokeCbt(action, payload) {
+    var client = c();
+    if (!client) return Promise.reject(new Error("The school sign-in service is unavailable."));
+    return client.auth.getSession().then(function (sessionResponse) {
+      var session = sessionResponse.data && sessionResponse.data.session;
+      if (!session || !session.access_token) throw new Error("Your school session has expired. Sign in again.");
+      return fetch(CBT_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + session.access_token,
+          apikey: CBT_API_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      }).then(function (response) {
+        return response.json().then(function (result) {
+          if (!response.ok) throw new Error(result.error || "The CBT service could not complete this request.");
+          return result.data;
+        });
+      });
+    });
+  }
+
   function currentProfile() {
     var client = c();
     if (!client) { return Promise.reject(nc()); }
@@ -1102,32 +1128,31 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
     }).then(function (res) {
       if (res.error) return { data: null, error: res.error };
       if (!payload.session_id) return { data: res.data, error: null };
-      return client.functions.invoke("cbt-api", {
-        body: { action: "admin.sync_students" }
-      }).then(function (studentSync) {
-        if (studentSync.error || (studentSync.data && studentSync.data.error)) {
-          return { data: null, error: { message: "Class saved, but CBT student records did not sync. " + ((studentSync.data && studentSync.data.error) || studentSync.error.message) } };
-        }
-        return client.functions.invoke("cbt-api", {
-          body: { action: "admin.sync_teacher_assignments", session_id: payload.session_id }
-        }).then(function (teacherSync) {
-          if (teacherSync.error || (teacherSync.data && teacherSync.data.error)) {
-            return { data: null, error: { message: "Class and student records saved, but CBT teacher assignments did not sync. " + ((teacherSync.data && teacherSync.data.error) || teacherSync.error.message) } };
-          }
-          return { data: res.data, error: null };
-        });
+      return invokeCbt("admin.sync_students").then(function () {
+        return invokeCbt("admin.sync_teacher_assignments", { session_id: payload.session_id });
+      }).then(function () {
+        return { data: res.data, error: null };
+      }).catch(function (error) {
+        return { data: null, error: { message: "School records were saved, but CBT synchronization failed: " + (error.message || "Unknown error") } };
       });
     });
   };
 
   PortalData.deleteClass = function (id) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("classes").delete().eq("id", id).select("id").maybeSingle()
-      .then(function (res) {
-        if (res.error) return { data: null, error: res.error };
-        if (!res.data) return { data: null, error: { message: "The class was not deleted. Check your administrator access." } };
-        return { data: res.data, error: null };
-      });
+    return invokeCbt("admin.dashboard").then(function (dashboard) {
+      var usedByExam = (dashboard.exams || []).some(function (exam) { return exam.class_id === id; });
+      if (usedByExam) {
+        throw new Error("This class is used by a CBT examination. Keep it in the school records.");
+      }
+      return client.from("classes").delete().eq("id", id).select("id").maybeSingle();
+    }).then(function (res) {
+      if (res.error) return { data: null, error: res.error };
+      if (!res.data) return { data: null, error: { message: "The class was not deleted. Check your administrator access." } };
+      return { data: res.data, error: null };
+    }).catch(function (error) {
+      return { data: null, error: { message: error.message || "Could not delete this class." } };
+    });
   };
 
   /* ---- CRUD: announcements (admin) ---- */
