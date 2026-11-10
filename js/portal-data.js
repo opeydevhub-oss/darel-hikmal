@@ -222,7 +222,12 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                 ? client.from("learning_materials").select("id,title,created_at,class_id,subject:subjects(name)").in("class_id", classIds).eq("status", "published").order("created_at", { ascending: false })
                 : Promise.resolve({ data: [], error: null }),
               client.from("announcements").select("id,title,body,created_at,audience,class_id,publish_at,expires_at,status").eq("status", "published").or("publish_at.is.null,publish_at.lte." + new Date().toISOString()).or("expires_at.is.null,expires_at.gt." + new Date().toISOString()).order("created_at", { ascending: false }),
-              client.from("academic_sessions").select("name").eq("is_current", true).maybeSingle()
+              client.from("academic_sessions").select("name").eq("is_current", true).maybeSingle(),
+              classIds.length && term && term.session_id
+                ? client.from("teaching_assignments")
+                    .select("is_class_teacher,staff:staff!inner(full_name,job_title),subject:subjects(name)")
+                    .in("class_id", classIds).eq("session_id", term.session_id)
+                : Promise.resolve({ data: [], error: null })
             ];
 
             return Promise.all(requests).then(function (r) {
@@ -239,6 +244,21 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                   (a.audience === "class" && classIds.indexOf(a.class_id) !== -1);
               });
               var session = r[6].data;
+              var teacherAssignments = r[7].data || [];
+              var teacherRecords = teacherAssignments.map(function (item) {
+                var teacherName = item.staff && item.staff.full_name ? item.staff.full_name : "Teacher";
+                var subjectName = item.subject && item.subject.name ? item.subject.name : "Subject";
+                return {
+                  title: item.is_class_teacher ? "Class teacher" : subjectName,
+                  meta: teacherName,
+                  badge: item.is_class_teacher ? "Class teacher" : "Subject teacher",
+                  body: item.staff && item.staff.job_title ? item.staff.job_title : ""
+                };
+              }).filter(function (item, index, all) {
+                return all.findIndex(function (candidate) {
+                  return candidate.title === item.title && candidate.meta === item.meta;
+                }) === index;
+              });
               var present = attendance.filter(function (a) { return a.status === "present"; }).length;
               var pct = attendance.length ? Math.round(present / attendance.length * 100) + "%" : "—";
               var feeOutstanding = fees.filter(function (f) { return f.status !== "paid" && f.status !== "waived"; })
@@ -284,6 +304,12 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                         ["Status", student.status || "Not recorded"]
                       ],
                       emptyMessage: "No student information is available."
+                    },
+                    {
+                      id: "teachers", title: "My teachers",
+                      intro: "The class teacher and subject teachers assigned to your class.",
+                      kind: "records", records: teacherRecords,
+                      emptyMessage: "Your teachers have not been assigned yet. Please check with the school office."
                     },
                     {
                       id: "attendance", title: "My attendance",
