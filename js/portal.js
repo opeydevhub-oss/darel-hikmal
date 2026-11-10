@@ -1232,6 +1232,18 @@ var PortalDashboard = {
         }
         return;
       }
+      if (parentMode && parentMode.value === "existing" && !payload.parent_profile_id) {
+        if (result) { result.hidden = false; result.className = "notice notice--error"; result.textContent = "Choose an existing parent account."; }
+        return;
+      }
+      if (parentMode && parentMode.value === "new" && (!payload.parent_full_name || !payload.parent_email)) {
+        if (result) { result.hidden = false; result.className = "notice notice--error"; result.textContent = "Enter the new parent's full name and email address."; }
+        return;
+      }
+      if (parentMode && parentMode.value !== "none" && PortalDashboard.role !== "admin") {
+        if (result) { result.hidden = false; result.className = "notice notice--error"; result.textContent = "Only an administrator can link or create parent accounts. Enrol the student first, then ask the administrator to link the parent."; }
+        return;
+      }
       submit.disabled = true;
       submit.textContent = "Creating student account…";
       if (result) {
@@ -1261,21 +1273,30 @@ var PortalDashboard = {
           PortalData.manageParent(parentPayload).then(function (parentResult) {
             if (parentResult.error) {
               if (result) {
-                result.hidden = false;
-                result.className = "notice notice--warn";
-                result.textContent = "Student enrolled, but the parent could not be linked: " + parentResult.error.message + " You can link the parent from Manage pupils → Edit.";
+                var warning = document.createElement("p");
+                warning.className = "notice notice--warn";
+                warning.textContent = "Student enrolled, but the parent could not be linked: " + parentResult.error.message + " You can link the parent from Manage pupils → Edit.";
+                result.querySelector("div")?.appendChild(warning);
               }
             } else if (parentResult.data && parentResult.data.initial_password && result) {
-              result.dataset.parentCredentials = "Parent login: " + (parentResult.data.parent_email || payload.parent_email) +
+              credentials += "\n\nParent login: " + (parentResult.data.parent_email || payload.parent_email) +
                 "\nInitial password: " + parentResult.data.initial_password;
+              var parentCredentials = document.createElement("p");
+              parentCredentials.textContent = "Parent login: " + (parentResult.data.parent_email || payload.parent_email) +
+                " · Initial password: " + parentResult.data.initial_password;
+              result.querySelector("div")?.appendChild(parentCredentials);
             } else if (result) {
-              result.dataset.parentLinked = "true";
+              var linked = document.createElement("p");
+              linked.className = "notice notice--success";
+              linked.textContent = "Parent account linked successfully.";
+              result.querySelector("div")?.appendChild(linked);
             }
           }).catch(function (error) {
             if (result) {
-              result.hidden = false;
-              result.className = "notice notice--warn";
-              result.textContent = "Student enrolled, but parent linking needs attention: " + (error.message || "Please link the parent from Manage pupils → Edit.");
+              var warning = document.createElement("p");
+              warning.className = "notice notice--warn";
+              warning.textContent = "Student enrolled, but parent linking needs attention: " + (error.message || "Please link the parent from Manage pupils → Edit.");
+              result.querySelector("div")?.appendChild(warning);
             }
           });
         }
@@ -1295,15 +1316,6 @@ var PortalDashboard = {
             warning +
             '<div class="btn-row"><button class="btn btn--outline-navy btn--small" type="button" data-copy-student-credentials>Copy credentials</button>' +
             '<button class="btn btn--primary btn--small" type="button" data-refresh-students>Refresh dashboard</button></div></div>';
-          if (result && result.dataset.parentCredentials) {
-            credentials += "\n\n" + result.dataset.parentCredentials;
-            var parentInfo = document.createElement("p");
-            parentInfo.textContent = "Parent account created. Copy the parent login details securely as well.";
-            result.querySelector("div").appendChild(parentInfo);
-            var parentPassword = document.createElement("p");
-            parentPassword.textContent = result.dataset.parentCredentials;
-            result.querySelector("div").appendChild(parentPassword);
-          }
           var copy = portalQuery("[data-copy-student-credentials]", result);
           if (copy) copy.addEventListener("click", function () {
             if (navigator.clipboard && navigator.clipboard.writeText) {
