@@ -104,7 +104,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
   /* Resolve the logged-in student row via the profile id. */
   function resolveStudent(client, profileId) {
   return client.from("students")
-    .select("id,profile_id,admission_no,first_name,last_name,date_of_birth,gender,status")
+    .select("id,profile_id,admission_no,first_name,middle_name,last_name,date_of_birth,gender,status")
     .eq("profile_id", profileId)
     .is("deleted_at", null)
     .maybeSingle()
@@ -190,7 +190,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
         }
 
         var student = stRes.data;
-        var fullName = student.full_name || [student.first_name, student.last_name].filter(Boolean).join(" ") || "Student";
+        var fullName = student.full_name || [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(" ") || "Student";
         return currentTerm(client).then(function (termRes) {
           if (termRes.error) return { data: null, error: termRes.error };
           var term = termRes.data;
@@ -384,7 +384,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
           var children = (linkRes.data || []).map(function (link) {
             var student = link.student;
             if (!student) return null;
-            student.full_name = [student.first_name, student.last_name].filter(Boolean).join(" ");
+            student.full_name = [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(" ");
             student.admission_number = student.admission_no;
             return student;
           }).filter(Boolean);
@@ -649,7 +649,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
 
           var rosterRes = classIds.length && term && term.session_id
             ? await client.from("enrolments")
-                .select("student_id,class_id,students!inner(id,admission_no,first_name,last_name,status,deleted_at),classes!inner(name,level,arm)")
+                .select("student_id,class_id,students!inner(id,admission_no,first_name,middle_name,last_name,status,deleted_at),classes!inner(name,level,arm)")
                 .in("class_id", classIds).eq("session_id", term.session_id).eq("status", "active")
             : { data: [], error: null };
           if (rosterRes.error) {
@@ -662,7 +662,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             var classInfo = item.classes;
             return [
               student.admission_no || "—",
-              [student.first_name, student.last_name].filter(Boolean).join(" "),
+              [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(" "),
               classInfo ? classInfo.name + (classInfo.level ? " · " + classInfo.level : "") : "—",
               "Active"
             ];
@@ -696,6 +696,15 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             ],
             records: [],
             emptyMessage: "There are no lessons waiting to be marked."
+          });
+
+          panels.push({
+            id: "enrol-students",
+            title: "Enrol a student",
+            intro: "Create a student account and enrol them in one of your assigned classes. Their student number and initial password are generated automatically.",
+            kind: "enrolment",
+            classes: classOptions,
+            emptyMessage: "You need an active class assignment before enrolling students."
           });
 
           panels.push({
@@ -849,7 +858,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
     var client = c();
     if (!client) { return Promise.resolve(nc()); }
     return Promise.all([
-      client.from("students").select("id,profile_id,admission_no,first_name,last_name,date_of_birth,gender,status").is("deleted_at", null).order("first_name"),
+      client.from("students").select("id,profile_id,admission_no,first_name,middle_name,last_name,date_of_birth,gender,status").is("deleted_at", null).order("first_name"),
       client.from("staff").select("id,profile_id,staff_no,full_name,job_title,status").order("full_name"),
       client.from("classes").select("id,name,level,arm").order("name"),
       client.from("admissions").select("id,applicant_name,guardian_name,class_applied,status,created_at,reviewed_by").order("created_at", { ascending: false }),
@@ -992,6 +1001,12 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
 
       var panels = [
         {
+          id: "enrol-students", title: "Enrol a student",
+          intro: "Create the student's portal account, generate their permanent student number and enrol them in a class.",
+          kind: "enrolment", classes: classes, sessionId: term ? term.session_id : null,
+          emptyMessage: "Set the current academic session before enrolling students."
+        },
+        {
           id: "pupils", title: "Manage pupils", intro: "Add, move or update pupil records.",
           kind: "table", caption: "All pupils on roll",
           columns: ["Admission no.", "Pupil", "Class", "Status"],
@@ -1076,9 +1091,17 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
   };
 
   /* ---- CRUD: pupils (admin) ---- */
+  PortalData.enrolStudent = function (payload) {
+    var client = c();
+    if (!client) return Promise.resolve(nc());
+    return client.functions.invoke("student-enrolment", { body: payload }).then(function (res) {
+      if (res.error) return { data: null, error: { message: res.error.message || "Student enrolment failed." } };
+      if (res.data && res.data.error) return { data: null, error: { message: res.data.error } };
+      return { data: res.data && res.data.data ? res.data.data : res.data, error: null };
+    });
+  };
   PortalData.createStudent = function (payload) {
-    var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("students").insert(payload).select().single();
+    return PortalData.enrolStudent(payload);
   };
   PortalData.updateStudent = function (id, payload) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
@@ -1089,7 +1112,7 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
       .then(function (res) {
         if (res.error || !res.data) return res;
         var profileUpdate = res.data.profile_id
-          ? client.from("profiles").update({ full_name: [payload.first_name, payload.last_name].filter(Boolean).join(" ") }).eq("id", res.data.profile_id)
+          ? client.from("profiles").update({ full_name: [payload.first_name, payload.middle_name, payload.last_name].filter(Boolean).join(" ") }).eq("id", res.data.profile_id)
           : Promise.resolve({ error: null });
         return profileUpdate.then(function (profileRes) {
           if (profileRes.error) return { data: null, error: profileRes.error };
