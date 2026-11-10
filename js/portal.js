@@ -1252,7 +1252,7 @@ function setUpSignInForm() {
     if (!email) {
       if (emailField) {
         emailField.closest(".form-row").classList.add("has-error");
-        portalQuery(".form-field-error", emailField.closest(".form-row")).textContent = "Enter your email address to continue.";
+        portalQuery(".form-field-error", emailField.closest(".form-row")).textContent = "Enter your email address or student number to continue.";
         firstInvalid = emailField;
       }
     }
