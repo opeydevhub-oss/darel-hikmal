@@ -110,7 +110,10 @@ var PortalAuth = (function () {
       if (!email || !password) {
         return Promise.resolve({ data: null, error: { message: "Enter your email address and password to continue." } });
       }
-      return c.auth.signInWithPassword({ email: email, password: password })
+      var loginEmail = email.indexOf("@") === -1
+        ? "dhia-" + email.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "@students.darelhikmah.school"
+        : email;
+      return c.auth.signInWithPassword({ email: loginEmail, password: password })
         .then(function (authResponse) {
           if (authResponse.error) { return { data: null, error: authResponse.error }; }
           var user = authResponse.data && authResponse.data.user;
@@ -388,6 +391,11 @@ var PortalDashboard = {
         self.panelBody(panel, false) +
         "</section>";
     }).join("");
+
+    portalQueryAll("[data-enrolment-form]", container).forEach(function (form) {
+      var panel = self.panelById(form.closest("[data-dash-panel]").getAttribute("data-dash-panel"));
+      self.wireEnrolment(form, panel);
+    });
 
     if (this.role === "admin") {
       container.insertAdjacentHTML("beforeend", self.academicSessionsMarkup());
@@ -804,6 +812,9 @@ var PortalDashboard = {
     if (panel.kind === "register") {
       return this.registerMarkup(panel);
     }
+    if (panel.kind === "enrolment") {
+      return this.enrolmentMarkup(panel);
+    }
     return this.emptyMarkup(emptyMessage);
   },
 
@@ -895,6 +906,95 @@ var PortalDashboard = {
       '<details class="mt-1"><summary>How grades are shown</summary>' +
       '<div class="table-wrap mt-1"><table class="table"><caption>Grade key (curriculum policy).</caption>' +
       "<thead><tr><th scope=\"col\">Grade</th><th scope=\"col\">Meaning</th></tr></thead><tbody>" + key + "</tbody></table></div></details>";
+  },
+
+  enrolmentMarkup: function (panel) {
+    var classes = panel.classes || [];
+    if (!classes.length) return this.emptyMarkup(panel.emptyMessage || "No assigned classes are available.");
+    return '<form class="form-stack" data-enrolment-form novalidate>' +
+      '<div class="form-grid">' +
+      '<label>First name<input class="form-control" name="first_name" required maxlength="80" autocomplete="given-name"></label>' +
+      '<label>Surname<input class="form-control" name="last_name" required maxlength="80" autocomplete="family-name"></label>' +
+      '</div>' +
+      '<label>Middle name (optional)<input class="form-control" name="middle_name" maxlength="80" autocomplete="additional-name"></label>' +
+      '<label>Class<select class="form-control" name="class_id" required><option value="">Choose a class</option>' +
+      classes.map(function (item) {
+        var label = [item.name, item.level, item.arm].filter(Boolean).join(" · ");
+        return '<option value="' + portalEscape(item.id) + '">' + portalEscape(label) + '</option>';
+      }).join("") +
+      '</select></label>' +
+      '<p class="muted">The system creates the student's portal account, generates a permanent student number and adds them to the current academic session.</p>' +
+      '<div class="notice mt-1" data-enrolment-result hidden role="status" aria-live="polite"></div>' +
+      '<button class="btn btn--primary" type="submit">Enrol student and create account</button>' +
+      '</form>';
+  },
+
+  wireEnrolment: function (form, panel) {
+    var self = this;
+    var result = portalQuery("[data-enrolment-result]", form);
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var submit = portalQuery('[type="submit"]', form);
+      var payload = Object.fromEntries(new FormData(form).entries());
+      if (!payload.first_name || !payload.last_name || !payload.class_id) {
+        if (result) {
+          result.hidden = false;
+          result.className = "notice notice--error";
+          result.textContent = "Enter the student's first name, surname and class.";
+        }
+        return;
+      }
+      submit.disabled = true;
+      submit.textContent = "Creating student account…";
+      if (result) {
+        result.hidden = false;
+        result.className = "notice notice--info";
+        result.textContent = "Creating the account, student number and class enrolment…";
+      }
+      PortalData.enrolStudent(payload).then(function (res) {
+        if (res.error || !res.data) throw new Error(res.error && res.error.message || "Student enrolment failed.");
+        var student = res.data;
+        var credentials = "Student number: " + student.student_number + "\nInitial password: " + student.initial_password;
+        var warning = student.cbt_sync_warning
+          ? '<p class="notice notice--warn">' + portalEscape(student.cbt_sync_warning) + '</p>'
+          : '<p class="notice notice--success">The student has also been added to the CBT directory.</p>';
+        if (result) {
+          result.hidden = false;
+          result.className = "notice notice--success";
+          result.innerHTML = '<div><h3>Student enrolled successfully</h3>' +
+            '<p><strong>Name:</strong> ' + portalEscape(student.full_name) + '</p>' +
+            '<p><strong>Student number:</strong> <code>' + portalEscape(student.student_number) + '</code></p>' +
+            '<p><strong>Class:</strong> ' + portalEscape(student.class_name) + '</p>' +
+            '<p><strong>Initial password:</strong> <code>' + portalEscape(student.initial_password) + '</code></p>' +
+            '<p class="muted">Copy these credentials now and give them securely to the student or guardian. The initial password is shown only once.</p>' +
+            warning +
+            '<div class="btn-row"><button class="btn btn--outline-navy btn--small" type="button" data-copy-student-credentials>Copy credentials</button>' +
+            '<button class="btn btn--primary btn--small" type="button" data-refresh-students>Refresh dashboard</button></div></div>';
+          var copy = portalQuery("[data-copy-student-credentials]", result);
+          if (copy) copy.addEventListener("click", function () {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(credentials).then(function () {
+                copy.textContent = "Copied";
+              }).catch(function () { copy.textContent = "Copy unavailable"; });
+            } else {
+              copy.textContent = "Select and copy the credentials above";
+            }
+          });
+          var refresh = portalQuery("[data-refresh-students]", result);
+          if (refresh) refresh.addEventListener("click", function () { self.refresh(); });
+        }
+        form.reset();
+      }).catch(function (error) {
+        if (result) {
+          result.hidden = false;
+          result.className = "notice notice--error";
+          result.textContent = error.message || "Could not enrol this student.";
+        }
+      }).finally(function () {
+        submit.disabled = false;
+        submit.textContent = "Enrol student and create account";
+      });
+    });
   },
 
   registerMarkup: function (panel) {
@@ -1153,12 +1253,6 @@ function setUpSignInForm() {
       if (emailField) {
         emailField.closest(".form-row").classList.add("has-error");
         portalQuery(".form-field-error", emailField.closest(".form-row")).textContent = "Enter your email address to continue.";
-        firstInvalid = emailField;
-      }
-    } else if (email.indexOf("@") === -1) {
-      if (emailField) {
-        emailField.closest(".form-row").classList.add("has-error");
-        portalQuery(".form-field-error", emailField.closest(".form-row")).textContent = "Enter a valid email address.";
         firstInvalid = emailField;
       }
     }
