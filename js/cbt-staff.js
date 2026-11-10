@@ -277,7 +277,7 @@
       '<form id="cbt-verify-student"><label>Student admission number<input class="form-control" name="admission_no" required></label>' +
       '<label>Examination PIN<input class="form-control" name="pin" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required></label>' +
       '<button class="btn btn--primary mt-1" type="submit">Authorize student</button></form>' +
-      '<h3 class="mt-2">Your invigilation assignments</h3><div class="table-wrap"><table class="table"><thead><tr><th>Examination</th><th>Start</th><th>Status</th><th></th></tr></thead><tbody id="cbt-staff-exams"></tbody></table></div>' +
+      '<h3 class="mt-2">Your invigilation assignments</h3><div class="table-wrap"><table class="table"><thead><tr><th>Examination</th><th>Start</th><th>Status</th><th></th></tr></thead><tbody id="cbt-staff-invig-exams"></tbody></table></div>' +
     "</section>";
 
   var dash = main.querySelector("[data-dash-panels]");
