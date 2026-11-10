@@ -437,15 +437,15 @@ var PortalDashboard = {
         }
       });
     });
-    if (!container.dataset.recordEditBound) {
-      container.addEventListener("click", function (event) {
-        var button = event.target.closest("[data-record-edit]");
-        if (!button || !container.contains(button)) return;
+    portalQueryAll("[data-record-edit]", container).forEach(function (button) {
+      if (button.dataset.recordEditBound) return;
+      button.dataset.recordEditBound = "true";
+      button.addEventListener("click", function (event) {
         event.preventDefault();
+        event.stopPropagation();
         self.openRecordEditor(button.getAttribute("data-record-edit"), button.getAttribute("data-record-id"));
       });
-      container.dataset.recordEditBound = "true";
-    }
+    });
     portalQueryAll("[data-class-edit]").forEach(function (button) {
       button.addEventListener("click", function () {
         self.openClassEditor(button.getAttribute("data-class-edit"));
