@@ -594,7 +594,7 @@ var PortalDashboard = {
       }).join("");
       html += '<section class="class-editor-section staff-assignment-editor">' +
         '<h3>Class and subject assignments</h3>' +
-        '<p class="muted">Only an administrator can assign teaching roles. A class teacher is also linked to one subject in the current system.</p>' +
+        '<p class="muted">Only an administrator can assign teaching roles. Class teachers may be assigned without a subject; subject teachers must have a subject.</p>' +
         '<div class="class-editor-list" data-staff-assignment-list>' +
         (staffAssignments.length ? staffAssignments.map(function (item) {
           var className = item.classes && item.classes.name ? item.classes.name : "Class";
