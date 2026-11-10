@@ -1261,21 +1261,44 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
   /* ---- Staff: attendance register ---- */
   PortalData.getClassStudents = function (classId) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("students")
-      .select("id,admission_number,full_name,current_class_id")
-      .eq("current_class_id", classId)
-      .order("full_name");
+    return currentTerm(client).then(function (termRes) {
+      if (termRes.error) return { data: null, error: termRes.error };
+      if (!termRes.data || !termRes.data.session_id) return { data: [], error: null };
+      return client.from("enrolments")
+        .select("id,student:students!inner(id,admission_no,first_name,middle_name,last_name,status,deleted_at)")
+        .eq("class_id", classId)
+        .eq("session_id", termRes.data.session_id)
+        .eq("status", "active")
+        .order("created_at")
+        .then(function (res) {
+          if (res.error) return res;
+          return {
+            data: (res.data || []).filter(function (row) {
+              return row.student && row.student.status === "active" && !row.student.deleted_at;
+            }).map(function (row) {
+              var student = row.student;
+              return {
+                id: row.id,
+                admission_number: student.admission_no,
+                full_name: [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(" ")
+              };
+            }),
+            error: null
+          };
+        });
+    });
   };
-  PortalData.getAttendanceRows = function (classId, date) {
+  PortalData.getAttendanceRows = function (enrolmentIds, date) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
+    if (!enrolmentIds || !enrolmentIds.length) return Promise.resolve({ data: [], error: null });
     return client.from("attendance")
-      .select("id,student_id,student:students!inner(id,admission_number,full_name),subject_id,session_date,status,marked_by,marked_at")
-      .eq("class_id", classId)
-      .eq("session_date", date);
+      .select("id,enrolment_id,attendance_date,status,marked_by,note")
+      .in("enrolment_id", enrolmentIds)
+      .eq("attendance_date", date);
   };
   PortalData.upsertAttendance = function (rows) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
-    return client.from("attendance").upsert(rows, { onConflict: "student_id,session_date,subject_id" });
+    return client.from("attendance").upsert(rows, { onConflict: "enrolment_id,attendance_date" });
   };
 
   /* ---- Staff: results entry ---- */
