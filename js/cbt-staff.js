@@ -273,6 +273,8 @@
   if (dash) dash.after(section);
 
   document.addEventListener("click", async function (event) {
+    var cbtNavigationLink = event.target.closest('[data-dash-link="cbt-staff-tools"]');
+    if (cbtNavigationLink && !data) load();
     var examButton = event.target.closest("[data-staff-exam]");
     if (examButton) {
       if (data && data.staff_role === "invigilator") {
