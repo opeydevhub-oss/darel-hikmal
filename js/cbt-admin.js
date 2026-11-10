@@ -153,7 +153,7 @@
         '<button class="btn btn--primary" type="submit">Create draft examination</button></form></section>' +
       '<section class="panel"><h3>Examinations</h3><div class="table-wrap"><table class="table"><thead><tr><th>Exam</th><th>Class</th><th>Subject</th><th>Status</th><th></th></tr></thead><tbody id="cbt-exams-body"><tr><td colspan="5">Loading…</td></tr></tbody></table></div></section>' +
     '</div>' +
-    '<section id="cbt-selected-exam" class="panel mt-2" hidden><div class="panel__head"><div><h3 id="cbt-selected-title">Selected examination</h3><p id="cbt-selected-meta" class="muted"></p></div><div class="btn-row"><button id="cbt-schedule-button" type="button" class="btn btn--primary">Schedule exam</button><button id="cbt-pin-button" type="button" class="btn btn--outline-navy">Generate session PIN</button><button id="cbt-close-button" type="button" class="btn btn--outline-navy" hidden>Close exam</button><button id="cbt-release-button" type="button" class="btn btn--primary" hidden>Release results</button><button id="cbt-results-button" type="button" class="btn btn--ghost">View results</button><button id="cbt-review-report-button" type="button" class="btn btn--outline-navy" hidden>Teacher review reports</button></div></div>' +
+    '<section id="cbt-selected-exam" class="panel mt-2" hidden><div class="panel__head"><div><h3 id="cbt-selected-title">Selected examination</h3><p id="cbt-selected-meta" class="muted"></p></div><div class="btn-row"><button id="cbt-schedule-button" type="button" class="btn btn--primary">Schedule exam</button><button id="cbt-pin-button" type="button" class="btn btn--outline-navy">Generate examination PIN</button><button id="cbt-close-button" type="button" class="btn btn--outline-navy" hidden>Close exam</button><button id="cbt-release-button" type="button" class="btn btn--primary" hidden>Release results</button><button id="cbt-results-button" type="button" class="btn btn--ghost">View results</button><button id="cbt-review-report-button" type="button" class="btn btn--outline-navy" hidden>Teacher review reports</button></div></div>' +
       '<div id="cbt-pin-output" class="notice notice--info" hidden></div><h4>Questions</h4><ol id="cbt-question-list"><li class="muted">Loading questions…</li></ol>' +
       '<form id="cbt-add-question" class="mt-2"><h4>Add question</h4><div class="grid grid--2">' +
         '<label>Question type<select class="form-control" name="question_type"><option value="mcq">Multiple choice</option><option value="true_false">True / False</option><option value="short_answer">Short answer (manual review)</option></select></label>' +
@@ -209,8 +209,29 @@
         var pin = await call("admin.generate_pin", { exam_id: state.exam.id });
         var output = document.getElementById("cbt-pin-output");
         output.hidden = false;
-        output.innerHTML = "<strong>Session PIN: " + escapeHtml(pin.pin) + "</strong><p>" + escapeHtml(pin.note) + "</p><p>Expires: " + escapeHtml(new Date(pin.expires_at).toLocaleString()) + "</p>";
-        message("New PIN generated. Copy it and share it only with assigned invigilators.", "info");
+        var expires = new Date(pin.expires_at).toLocaleString();
+        var classRecord = (state.data.classes || []).find(function (item) { return item.id === state.exam.class_id; });
+        var shareText = "Darel Hikmah International Academy\\nExamination: " + state.exam.title +
+          "\\nClass: " + (classRecord ? classRecord.name : "Selected class") +
+          "\\nStudent PIN: " + pin.pin + "\\nExpires: " + expires +
+          "\\nStudents should enter their student number and this PIN on the CBT portal.";
+        output.innerHTML = "<strong>Examination PIN: " + escapeHtml(pin.pin) + "</strong><p>" +
+          escapeHtml(pin.note) + "</p><p>Expires: " + escapeHtml(expires) + "</p>" +
+          '<button type="button" class="btn btn--small btn--outline-navy" data-copy-cbt-pin>Copy WhatsApp message</button>';
+        var copyButton = output.querySelector("[data-copy-cbt-pin]");
+        if (copyButton) copyButton.addEventListener("click", function () {
+          if (!navigator.clipboard || !navigator.clipboard.writeText) {
+            message("Copy is unavailable in this browser. Select and copy the PIN and expiry above.", "error");
+            return;
+          }
+          navigator.clipboard.writeText(shareText).then(function () {
+            copyButton.textContent = "Message copied";
+            message("PIN message copied. Paste it into the WhatsApp group for this class.", "success");
+          }).catch(function () {
+            message("Could not copy automatically. Select and copy the PIN message.", "error");
+          });
+        });
+        message("New examination PIN generated. Copy the message and share it with students in the selected class.", "info");
       } catch (error) { message(error.message, "error"); }
     }
     if (event.target.id === "cbt-review-report-button" && state.exam) {
