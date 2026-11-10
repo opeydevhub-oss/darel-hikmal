@@ -1120,6 +1120,16 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
     });
   };
 
+  PortalData.deleteClass = function (id) {
+    var client = c(); if (!client) { return Promise.resolve(nc()); }
+    return client.from("classes").delete().eq("id", id).select("id").maybeSingle()
+      .then(function (res) {
+        if (res.error) return { data: null, error: res.error };
+        if (!res.data) return { data: null, error: { message: "The class was not deleted. Check your administrator access." } };
+        return { data: res.data, error: null };
+      });
+  };
+
   /* ---- CRUD: announcements (admin) ---- */
   PortalData.createAnnouncement = function (payload) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
