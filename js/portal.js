@@ -610,8 +610,7 @@ var PortalDashboard = {
         '<div data-subject-assignment-fields><label>Subject (required for subject teachers)<select class="form-control" name="assignment_subject"><option value="">Choose subject…</option>' + subjectOptions + '</select></label>' +
         '<div class="class-subject-add"><label for="staff-new-subject">Add a subject if it is not listed</label><div class="class-subject-add__row"><input class="form-control" id="staff-new-subject" maxlength="80" placeholder="e.g. Mathematics"><button type="button" class="btn btn--outline-navy btn--small" data-staff-add-subject>Add subject</button></div></div></div>' +
         '<p class="muted">Subject is optional for class teachers. Only one class teacher can be assigned to each class.</p>' +
-        '<button type="button" class="btn btn--outline-navy btn--small" data-add-staff-assignment>Add teaching assignment</button>' +
-        '<p class="muted" data-staff-assignment-message role="status"></p></section>';
+        '<p class="muted" data-staff-assignment-message role="status">Choose the class and teaching role above, then tap Save changes to save the staff record and assignment together.</p></section>';
     }
     html += '<p class="muted" data-editor-message role="status"></p><div class="btn-row"><button class="btn btn--primary" type="submit">Save changes</button><button class="btn btn--outline-navy" type="button" data-editor-close>Cancel</button></div></form>';
     dialog.innerHTML = html;
@@ -665,21 +664,7 @@ var PortalDashboard = {
           assignmentMessage.textContent = error.message || "Could not add the subject.";
         }).finally(function () { addSubject.disabled = false; });
       });
-      var addAssignment = dialog.querySelector("[data-add-staff-assignment]");
-      if (addAssignment) addAssignment.addEventListener("click", function () {
-        var classId = dialog.querySelector('[name="assignment_class"]').value;
-        var subjectId = dialog.querySelector('[name="assignment_subject"]').value;
-        var isClassTeacher = dialog.querySelector('[name="assignment_role"]').value === "class";
-        if (!classId) {
-          assignmentMessage.textContent = "Choose a class first.";
-          return;
-        }
-        if (!isClassTeacher && !subjectId) {
-          assignmentMessage.textContent = "Choose a subject for a subject teacher.";
-          return;
-        }
-        runAssignment(addAssignment, { class_id: classId, subject_id: subjectId || null, is_class_teacher: isClassTeacher, assigned: true });
-      });
+
       dialog.querySelectorAll("[data-remove-staff-assignment]").forEach(function (button) {
         button.addEventListener("click", function () {
           if (!window.confirm("Remove this teaching assignment for the current academic session?")) return;
@@ -703,7 +688,17 @@ var PortalDashboard = {
       message.textContent = "Saving changes…";
       var payload = Object.fromEntries(new FormData(form).entries());
       if (kind === "pupils" && !payload.date_of_birth) payload.date_of_birth = null;
+      var assignment = null;
       if (kind === "staff") {
+        var classId = payload.assignment_class || "";
+        var subjectId = payload.assignment_subject || "";
+        var isClassTeacher = payload.assignment_role === "class";
+        if (classId && !isClassTeacher && !subjectId) {
+          message.textContent = "Choose a subject for a subject teacher.";
+          submit.disabled = false;
+          return;
+        }
+        if (classId) assignment = { class_id: classId, subject_id: subjectId || null, is_class_teacher: isClassTeacher, assigned: true };
         ["assignment_class", "assignment_role", "assignment_subject"].forEach(function (key) {
           delete payload[key];
         });
@@ -711,7 +706,14 @@ var PortalDashboard = {
       var request = kind === "pupils" ? PortalData.updateStudent(id, payload) : PortalData.updateStaff(id, payload);
       request.then(function (result) {
         if (result.error) throw new Error(result.error.message || "Could not save this record.");
-        message.textContent = "Changes saved.";
+        if (kind === "staff" && assignment) {
+          message.textContent = "Staff details saved. Saving teaching assignment…";
+          return PortalData.setStaffTeachingAssignment(id, assignment).then(function (assignmentResult) {
+            if (assignmentResult.error) throw new Error(assignmentResult.error.message || "Staff details saved, but the teaching assignment could not be saved.");
+          });
+        }
+      }).then(function () {
+        message.textContent = "Changes and teaching assignment saved.";
         dialog.close();
         self.refresh();
       }).catch(function (error) {
