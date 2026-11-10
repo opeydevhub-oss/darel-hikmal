@@ -868,7 +868,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
       currentTerm(client),
       client.from("enrolments").select("student_id,class_id,session_id,status").eq("status", "active"),
       client.from("teaching_assignments").select("id,staff_id,class_id,subject_id,session_id,is_class_teacher,staff:staff(id,full_name,staff_no),classes:classes(id,name,level,arm),subject:subjects(id,name)").order("created_at"),
-      client.from("subjects").select("id,name,code").eq("is_active", true).order("name")
+      client.from("subjects").select("id,name,code,is_active").order("name")
     ]).then(function (r) {
       
 var failedQuery = r.find(function (item) {
@@ -1338,6 +1338,14 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
   PortalData.createSubject = function (payload) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
     return client.from("subjects").insert(payload).select("id,name,code,is_active").single();
+  };
+  PortalData.updateSubject = function (id, payload) {
+    var client = c(); if (!client) { return Promise.resolve(nc()); }
+    return client.from("subjects").update(payload).eq("id", id).select("id,name,code,is_active").single();
+  };
+  PortalData.deleteSubject = function (id) {
+    var client = c(); if (!client) { return Promise.resolve(nc()); }
+    return client.from("subjects").delete().eq("id", id);
   };
   PortalData.getParentNames = function () {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
