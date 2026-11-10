@@ -822,7 +822,11 @@ var PortalDashboard = {
       submit.disabled = true;
       message.textContent = "Saving changes…";
       var payload = Object.fromEntries(new FormData(form).entries());
-      if (kind === "pupils" && !payload.date_of_birth) payload.date_of_birth = null;
+      if (kind === "pupils") {
+        delete payload.link_parent_profile_id;
+        delete payload.link_parent_relationship;
+        if (!payload.date_of_birth) payload.date_of_birth = null;
+      }
       var assignment = null;
       if (kind === "staff") {
         var classId = payload.assignment_class || "";
@@ -1206,6 +1210,10 @@ var PortalDashboard = {
       var mode = parentMode ? parentMode.value : "none";
       if (existingFields) existingFields.hidden = mode !== "existing";
       if (newFields) newFields.hidden = mode !== "new";
+    }
+    if (parentMode && PortalDashboard.role !== "admin") {
+      var parentSection = parentMode.closest(".class-editor-section");
+      if (parentSection) parentSection.hidden = true;
     }
     if (parentMode) {
       parentMode.addEventListener("change", updateParentFields);
