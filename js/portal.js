@@ -690,6 +690,11 @@ var PortalDashboard = {
       message.textContent = "Saving changes…";
       var payload = Object.fromEntries(new FormData(form).entries());
       if (kind === "pupils" && !payload.date_of_birth) payload.date_of_birth = null;
+      if (kind === "staff") {
+        ["assignment_class", "assignment_role", "assignment_subject"].forEach(function (key) {
+          delete payload[key];
+        });
+      }
       var request = kind === "pupils" ? PortalData.updateStudent(id, payload) : PortalData.updateStaff(id, payload);
       request.then(function (result) {
         if (result.error) throw new Error(result.error.message || "Could not save this record.");
