@@ -598,7 +598,7 @@ var PortalDashboard = {
         '<div class="class-editor-list" data-staff-assignment-list>' +
         (staffAssignments.length ? staffAssignments.map(function (item) {
           var className = item.classes && item.classes.name ? item.classes.name : "Class";
-          var subjectName = item.subject && item.subject.name ? item.subject.name : "Subject";
+          var subjectName = item.subject && item.subject.name ? item.subject.name : "No subject assigned";
           return '<div class="class-editor-choice"><span><strong>' + portalEscape(className) + '</strong><small>' +
             portalEscape(item.is_class_teacher ? "Class teacher · " : "Subject teacher · ") + portalEscape(subjectName) +
             '</small></span><button type="button" class="btn btn--small btn--ghost" data-remove-staff-assignment data-class-id="' +
@@ -607,9 +607,9 @@ var PortalDashboard = {
         '</div><div class="form-grid mt-1">' +
         '<label>Class<select class="form-control" name="assignment_class"><option value="">Choose class…</option>' + classOptions + '</select></label>' +
         '<label>Teaching role<select class="form-control" name="assignment_role"><option value="subject">Subject teacher</option><option value="class">Class teacher</option></select></label></div>' +
-        '<label>Subject<select class="form-control" name="assignment_subject"><option value="">Choose subject…</option>' + subjectOptions + '</select></label>' +
-        '<div class="class-subject-add"><label for="staff-new-subject">Add a subject if it is not listed</label><div class="class-subject-add__row"><input class="form-control" id="staff-new-subject" maxlength="80" placeholder="e.g. Mathematics"><button type="button" class="btn btn--outline-navy btn--small" data-staff-add-subject>Add subject</button></div></div>' +
-        '<p class="muted">For a class teacher, choose the subject they will also teach. Only one class teacher can be assigned to each class.</p>' +
+        '<div data-subject-assignment-fields><label>Subject (required for subject teachers)<select class="form-control" name="assignment_subject"><option value="">Choose subject…</option>' + subjectOptions + '</select></label>' +
+        '<div class="class-subject-add"><label for="staff-new-subject">Add a subject if it is not listed</label><div class="class-subject-add__row"><input class="form-control" id="staff-new-subject" maxlength="80" placeholder="e.g. Mathematics"><button type="button" class="btn btn--outline-navy btn--small" data-staff-add-subject>Add subject</button></div></div></div>' +
+        '<p class="muted">Subject is optional for class teachers. Only one class teacher can be assigned to each class.</p>' +
         '<button type="button" class="btn btn--outline-navy btn--small" data-add-staff-assignment>Add teaching assignment</button>' +
         '<p class="muted" data-staff-assignment-message role="status"></p></section>';
     }
@@ -622,6 +622,15 @@ var PortalDashboard = {
 
     if (kind === "staff") {
       var assignmentMessage = dialog.querySelector("[data-staff-assignment-message]");
+      var roleSelect = dialog.querySelector('[name="assignment_role"]');
+      var subjectFields = dialog.querySelector("[data-subject-assignment-fields]");
+      function updateSubjectRequirement() {
+        var isClassTeacher = roleSelect.value === "class";
+        subjectFields.hidden = isClassTeacher;
+        dialog.querySelector('[name="assignment_subject"]').required = !isClassTeacher;
+      }
+      roleSelect.addEventListener("change", updateSubjectRequirement);
+      updateSubjectRequirement();
       function runAssignment(button, payload) {
         button.disabled = true;
         assignmentMessage.textContent = "Updating teaching assignments…";
@@ -661,18 +670,22 @@ var PortalDashboard = {
         var classId = dialog.querySelector('[name="assignment_class"]').value;
         var subjectId = dialog.querySelector('[name="assignment_subject"]').value;
         var isClassTeacher = dialog.querySelector('[name="assignment_role"]').value === "class";
-        if (!classId || !subjectId) {
-          assignmentMessage.textContent = "Choose both a class and a subject.";
+        if (!classId) {
+          assignmentMessage.textContent = "Choose a class first.";
           return;
         }
-        runAssignment(addAssignment, { class_id: classId, subject_id: subjectId, is_class_teacher: isClassTeacher, assigned: true });
+        if (!isClassTeacher && !subjectId) {
+          assignmentMessage.textContent = "Choose a subject for a subject teacher.";
+          return;
+        }
+        runAssignment(addAssignment, { class_id: classId, subject_id: subjectId || null, is_class_teacher: isClassTeacher, assigned: true });
       });
       dialog.querySelectorAll("[data-remove-staff-assignment]").forEach(function (button) {
         button.addEventListener("click", function () {
           if (!window.confirm("Remove this teaching assignment for the current academic session?")) return;
           runAssignment(button, {
             class_id: button.getAttribute("data-class-id"),
-            subject_id: button.getAttribute("data-subject-id"),
+            subject_id: button.getAttribute("data-subject-id") || null,
             is_class_teacher: false,
             assigned: false
           });
