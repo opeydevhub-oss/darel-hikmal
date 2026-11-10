@@ -634,14 +634,15 @@ var PortalDashboard = {
     var html = '<form id="portal-record-editor-form" class="form-stack" data-kind="' + kind + '" data-id="' + portalEscape(id) + '">' +
       '<div class="panel__head"><div><span class="eyebrow">School records</span><h2>Edit ' + (kind === "pupils" ? "student" : "staff") +
       ' record</h2></div><button type="button" class="btn btn--ghost btn--small" data-editor-close>Close</button></div>';
+    var dashboard = this;
     fields.forEach(function (field) {
       var value = record[field[0]] == null ? "" : String(record[field[0]]);
       html += '<label>' + field[1];
       if (field[2] === "class") {
-        var currentEnrolment = (this.config.adminEnrolments || []).find(function (item) { return item.student_id === id; });
+        var currentEnrolment = (dashboard.config.adminEnrolments || []).find(function (item) { return item.student_id === id; });
         value = currentEnrolment ? currentEnrolment.class_id : "";
         html += '<select class="form-control" name="class_id"><option value="">Unassigned</option>' +
-          (this.config.adminClasses || []).map(function (item) {
+          (dashboard.config.adminClasses || []).map(function (item) {
             var label = [item.name, item.level, item.arm].filter(Boolean).join(" · ");
             return '<option value="' + portalEscape(item.id) + '"' + (value === item.id ? " selected" : "") + '>' + portalEscape(label) + '</option>';
           }).join("") + '</select>';
