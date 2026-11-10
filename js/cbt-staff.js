@@ -69,7 +69,7 @@
   }
 
   function renderExams() {
-    var target = document.getElementById("cbt-staff-exams");
+    var target = document.getElementById(data && data.staff_role === "invigilator" ? "cbt-staff-invig-exams" : "cbt-staff-exams");
     if (!target) return;
     var exams = data.exams || [];
     if (!exams.length) {
