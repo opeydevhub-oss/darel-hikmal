@@ -823,7 +823,11 @@ var PortalDashboard = {
       submit.disabled = true;
       message.textContent = "Saving changes…";
       var payload = Object.fromEntries(new FormData(form).entries());
+      var parentProfileId = "";
+      var parentRelationship = "Parent/Guardian";
       if (kind === "pupils") {
+        parentProfileId = payload.link_parent_profile_id || "";
+        parentRelationship = payload.link_parent_relationship || "Parent/Guardian";
         delete payload.link_parent_profile_id;
         delete payload.link_parent_relationship;
         if (!payload.date_of_birth) payload.date_of_birth = null;
@@ -846,6 +850,18 @@ var PortalDashboard = {
       var request = kind === "pupils" ? PortalData.updateStudent(id, payload) : PortalData.updateStaff(id, payload);
       request.then(function (result) {
         if (result.error) throw new Error(result.error.message || "Could not save this record.");
+        if (kind === "pupils" && parentProfileId) {
+          message.textContent = "Student details saved. Linking parent account…";
+          return PortalData.manageParent({
+            action: "link_existing",
+            student_id: id,
+            parent_profile_id: parentProfileId,
+            relationship: parentRelationship,
+            is_primary: true
+          }).then(function (linkResult) {
+            if (linkResult.error) throw new Error("Student details saved, but parent linking failed: " + (linkResult.error.message || "Unknown error."));
+          });
+        }
         if (kind === "staff" && assignment) {
           message.textContent = "Staff details saved. Saving teaching assignment…";
           return PortalData.setStaffTeachingAssignment(id, assignment).then(function (assignmentResult) {
@@ -853,7 +869,7 @@ var PortalDashboard = {
           });
         }
       }).then(function () {
-        message.textContent = "Changes and teaching assignment saved.";
+        message.textContent = parentProfileId ? "Student details and parent link saved." : "Changes saved.";
         dialog.close();
         self.refresh();
       }).catch(function (error) {
