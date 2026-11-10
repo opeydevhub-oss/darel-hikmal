@@ -542,7 +542,7 @@ var PortalDashboard = {
       document.body.appendChild(dialog);
     }
     var fields = kind === "pupils"
-      ? [["admission_no","Admission number","text",true],["first_name","First name","text",true],["last_name","Last name","text",true],["date_of_birth","Date of birth","date",false],["gender","Gender","gender",false],["class_id","Current class","class",false],["status","Status","status",true]]
+      ? [["admission_no","Admission number","text",true],["first_name","First name","text",true],["middle_name","Middle name","text",false],["last_name","Last name","text",true],["date_of_birth","Date of birth","date",false],["gender","Gender","gender",false],["class_id","Current class","class",false],["status","Status","status",true]]
       : [["staff_no","Staff number","text",true],["full_name","Full name","text",true],["job_title","Job title","text",false],["status","Status","status",true]];
     var html = '<form id="portal-record-editor-form" class="form-stack" data-kind="' + kind + '" data-id="' + portalEscape(id) + '">' +
       '<div class="panel__head"><div><span class="eyebrow">School records</span><h2>Edit ' + (kind === "pupils" ? "student" : "staff") +
@@ -640,7 +640,7 @@ var PortalDashboard = {
       '<label>Arm (optional)<input class="form-control" name="arm" maxlength="40" value="' + portalEscape(classRecord.arm || "") + '"></label>' +
       '<section class="class-editor-section"><h3>Existing students</h3><p class="muted">Tick every student who belongs to this class for the current academic session.</p>' +
       (students.length ? '<div class="class-editor-list">' + students.map(function (student) {
-        var name = [student.first_name, student.last_name].filter(Boolean).join(" ");
+        var name = [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(" ");
         return '<label class="class-editor-choice"><input type="checkbox" name="student_ids" value="' + portalEscape(student.id) + '"' +
           (assignedStudents.indexOf(student.id) !== -1 ? " checked" : "") + '><span><strong>' + portalEscape(name) +
           '</strong><small>' + portalEscape(student.admission_no || "No admission number") + '</small></span></label>';
