@@ -428,6 +428,21 @@ var PortalDashboard = {
         self.openClassEditor(button.getAttribute("data-class-edit"));
       });
     });
+    portalQueryAll("[data-class-delete]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var classId = button.getAttribute("data-class-delete");
+        var record = (self.config.adminClasses || []).find(function (item) { return item.id === classId; });
+        if (!record || !window.confirm('Delete ' + record.name + '? Classes with linked school or examination records cannot be deleted.')) return;
+        button.disabled = true;
+        PortalData.deleteClass(classId).then(function (result) {
+          if (result.error) throw new Error(result.error.message || "Could not delete this class.");
+          self.refresh();
+        }).catch(function (error) {
+          button.disabled = false;
+          window.alert(error.message || "This class could not be deleted. Check whether it has linked records.");
+        });
+      });
+    });
   },
 
   academicSessionsMarkup: function () {
@@ -600,9 +615,7 @@ var PortalDashboard = {
     var staffList = (this.config.adminStaff || []).filter(function (item) { return item.status === "active"; });
     var students = (this.config.adminStudents || []).filter(function (item) { return item.status === "active"; });
     var subjects = this.config.adminSubjects || [];
-    var standardLevels = [];
-    for (var basic = 1; basic <= 9; basic += 1) standardLevels.push("Basic " + basic);
-    for (var senior = 1; senior <= 3; senior += 1) standardLevels.push("SS " + senior);
+    var standardLevels = ["Junior Secondary", "Senior Secondary"];
     if (classRecord.level && standardLevels.indexOf(classRecord.level) === -1) {
       standardLevels.unshift(classRecord.level);
     }
@@ -613,7 +626,7 @@ var PortalDashboard = {
       '</h2><p>Choose existing pupils and assign teachers to subjects.</p></div>' +
       '<button type="button" class="btn btn--ghost btn--small" data-class-close>Close</button></div>' +
       '<label>Class name<input class="form-control" name="name" required maxlength="80" value="' + portalEscape(classRecord.name || "") + '"></label>' +
-      '<label>Level / year group<select class="form-control" name="level" required><option value="">Choose a class level…</option>' +
+      '<label>School section<select class="form-control" name="level" required><option value="">Choose a school section…</option>' +
       standardLevels.map(function (level) { return '<option value="' + portalEscape(level) + '"' + (classRecord.level === level ? " selected" : "") + '>' + portalEscape(level) + '</option>'; }).join("") +
       '</select></label>' +
       '<label>Arm (optional)<input class="form-control" name="arm" maxlength="40" value="' + portalEscape(classRecord.arm || "") + '"></label>' +
@@ -648,15 +661,8 @@ var PortalDashboard = {
 
     dialog.innerHTML = html;
     if (!dialog.open) dialog.showModal();
-    var levelSelect = dialog.querySelector('select[name="level"]');
     var classNameInput = dialog.querySelector('input[name="name"]');
-    var previousLevel = levelSelect.value;
-    levelSelect.addEventListener("change", function () {
-      if (!classNameInput.value.trim() || classNameInput.value === previousLevel || standardLevels.indexOf(classNameInput.value) !== -1) {
-        classNameInput.value = levelSelect.value;
-      }
-      previousLevel = levelSelect.value;
-    });
+    classNameInput.setAttribute("autocomplete", "off");
     dialog.querySelectorAll("[data-class-close]").forEach(function (button) {
       button.addEventListener("click", function () { dialog.close(); });
     });
@@ -826,7 +832,7 @@ var PortalDashboard = {
         ? '<td><button class="btn btn--small btn--outline-navy" type="button" data-record-edit="' +
           panel.id + '" data-record-id="' + portalEscape(recordId) + '">Edit</button></td>'
         : recordId && panel.id === "classes"
-          ? '<td><button class="btn btn--small btn--outline-navy" type="button" data-class-edit="' + portalEscape(recordId) + '">Edit class</button></td>'
+          ? '<td><div class="btn-row"><button class="btn btn--small btn--outline-navy" type="button" data-class-edit="' + portalEscape(recordId) + '">Edit</button><button class="btn btn--small btn--ghost" type="button" data-class-delete="' + portalEscape(recordId) + '">Delete</button></div></td>'
           : "";
       return "<tr data-table-row=\"" + rowIndex + "\">" + cells + edit + "</tr>";
     }).join("");
