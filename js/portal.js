@@ -553,7 +553,7 @@ var PortalDashboard = {
     }
     var fields = kind === "pupils"
       ? [["admission_no","Admission number","text",true],["first_name","First name","text",true],["middle_name","Middle name","text",false],["last_name","Last name","text",true],["date_of_birth","Date of birth","date",false],["gender","Gender","gender",false],["class_id","Current class","class",false],["status","Status","status",true]]
-      : [["staff_no","Staff number","text",true],["full_name","Full name","text",true],["job_title","Class / teaching role","text",false],["status","Account status","status",true]];
+      : [["staff_no","Staff number","text",true],["full_name","Full name","text",true],["job_title","Staff designation (optional)","text",false],["status","Account status","status",true]];
     var html = '<form id="portal-record-editor-form" class="form-stack" data-kind="' + kind + '" data-id="' + portalEscape(id) + '">' +
       '<div class="panel__head"><div><span class="eyebrow">School records</span><h2>Edit ' + (kind === "pupils" ? "student" : "staff") +
       ' record</h2></div><button type="button" class="btn btn--ghost btn--small" data-editor-close>Close</button></div>';
@@ -577,17 +577,87 @@ var PortalDashboard = {
       } else {
         html += '<input class="form-control" type="' + field[2] + '" name="' + field[0] + '"' +
           (field[3] ? " required" : "") +
-          (field[0] === "job_title" ? ' placeholder="e.g. JSS 1 Class Teacher"' : "") +
+          (field[0] === "job_title" ? ' placeholder="e.g. Teaching Staff"' : "") +
           ' value="' + portalEscape(value) + '">';
       }
       html += '</label>';
     });
+
+    if (kind === "staff") {
+      var staffAssignments = (this.config.adminTeachingAssignments || []).filter(function (item) { return item.staff_id === id; });
+      var classOptions = (this.config.adminClasses || []).map(function (item) {
+        var label = [item.name, item.level, item.arm].filter(Boolean).join(" · ");
+        return '<option value="' + portalEscape(item.id) + '">' + portalEscape(label) + '</option>';
+      }).join("");
+      var subjectOptions = (this.config.adminSubjects || []).map(function (item) {
+        return '<option value="' + portalEscape(item.id) + '">' + portalEscape(item.name) + '</option>';
+      }).join("");
+      html += '<section class="class-editor-section staff-assignment-editor">' +
+        '<h3>Class and subject assignments</h3>' +
+        '<p class="muted">Only an administrator can assign teaching roles. A class teacher is also linked to one subject in the current system.</p>' +
+        '<div class="class-editor-list" data-staff-assignment-list>' +
+        (staffAssignments.length ? staffAssignments.map(function (item) {
+          var className = item.classes && item.classes.name ? item.classes.name : "Class";
+          var subjectName = item.subject && item.subject.name ? item.subject.name : "Subject";
+          return '<div class="class-editor-choice"><span><strong>' + portalEscape(className) + '</strong><small>' +
+            portalEscape(item.is_class_teacher ? "Class teacher · " : "Subject teacher · ") + portalEscape(subjectName) +
+            '</small></span><button type="button" class="btn btn--small btn--ghost" data-remove-staff-assignment data-class-id="' +
+            portalEscape(item.class_id) + '" data-subject-id="' + portalEscape(item.subject_id) + '">Remove</button></div>';
+        }).join("") : '<p class="muted">No teaching assignments for this staff member in the current academic session.</p>') +
+        '</div><div class="form-grid mt-1">' +
+        '<label>Class<select class="form-control" name="assignment_class"><option value="">Choose class…</option>' + classOptions + '</select></label>' +
+        '<label>Teaching role<select class="form-control" name="assignment_role"><option value="subject">Subject teacher</option><option value="class">Class teacher</option></select></label></div>' +
+        '<label>Subject<select class="form-control" name="assignment_subject"><option value="">Choose subject…</option>' + subjectOptions + '</select></label>' +
+        '<p class="muted">For a class teacher, choose the subject they will also teach. Only one class teacher can be assigned to each class.</p>' +
+        '<button type="button" class="btn btn--outline-navy btn--small" data-add-staff-assignment>Add teaching assignment</button>' +
+        '<p class="muted" data-staff-assignment-message role="status"></p></section>';
+    }
     html += '<p class="muted" data-editor-message role="status"></p><div class="btn-row"><button class="btn btn--primary" type="submit">Save changes</button><button class="btn btn--outline-navy" type="button" data-editor-close>Cancel</button></div></form>';
     dialog.innerHTML = html;
     if (!dialog.open) dialog.showModal();
     dialog.querySelectorAll("[data-editor-close]").forEach(function (button) {
       button.addEventListener("click", function () { dialog.close(); });
     });
+
+    if (kind === "staff") {
+      var assignmentMessage = dialog.querySelector("[data-staff-assignment-message]");
+      function runAssignment(button, payload) {
+        button.disabled = true;
+        assignmentMessage.textContent = "Updating teaching assignments…";
+        PortalData.setStaffTeachingAssignment(id, payload).then(function (result) {
+          if (result.error) throw new Error(result.error.message || "Could not update the teaching assignment.");
+          assignmentMessage.textContent = "Teaching assignment updated.";
+          dialog.close();
+          self.refresh();
+        }).catch(function (error) {
+          assignmentMessage.textContent = error.message || "Could not update the teaching assignment.";
+          button.disabled = false;
+        });
+      }
+      var addAssignment = dialog.querySelector("[data-add-staff-assignment]");
+      if (addAssignment) addAssignment.addEventListener("click", function () {
+        var classId = dialog.querySelector('[name="assignment_class"]').value;
+        var subjectId = dialog.querySelector('[name="assignment_subject"]').value;
+        var isClassTeacher = dialog.querySelector('[name="assignment_role"]').value === "class";
+        if (!classId || !subjectId) {
+          assignmentMessage.textContent = "Choose both a class and a subject.";
+          return;
+        }
+        runAssignment(addAssignment, { class_id: classId, subject_id: subjectId, is_class_teacher: isClassTeacher, assigned: true });
+      });
+      dialog.querySelectorAll("[data-remove-staff-assignment]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          if (!window.confirm("Remove this teaching assignment for the current academic session?")) return;
+          runAssignment(button, {
+            class_id: button.getAttribute("data-class-id"),
+            subject_id: button.getAttribute("data-subject-id"),
+            is_class_teacher: false,
+            assigned: false
+          });
+        });
+      });
+    }
+
     var self = this;
     dialog.querySelector("form").addEventListener("submit", function (event) {
       event.preventDefault();
