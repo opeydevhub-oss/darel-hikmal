@@ -426,11 +426,15 @@ var PortalDashboard = {
         }
       });
     });
-    portalQueryAll("[data-record-edit]").forEach(function (button) {
-      button.addEventListener("click", function () {
+    if (!container.dataset.recordEditBound) {
+      container.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-record-edit]");
+        if (!button || !container.contains(button)) return;
+        event.preventDefault();
         self.openRecordEditor(button.getAttribute("data-record-edit"), button.getAttribute("data-record-id"));
       });
-    });
+      container.dataset.recordEditBound = "true";
+    }
     portalQueryAll("[data-class-edit]").forEach(function (button) {
       button.addEventListener("click", function () {
         self.openClassEditor(button.getAttribute("data-class-edit"));
@@ -533,7 +537,13 @@ var PortalDashboard = {
     var record = kind === "pupils"
       ? (this.config.adminStudents || []).find(function (item) { return item.id === id; })
       : (this.config.adminStaff || []).find(function (item) { return item.id === id; });
-    if (!record) { this.refresh(); return; }
+    if (!record) {
+      window.alert(kind === "pupils"
+        ? "This pupil record could not be found in the latest dashboard data. The list will refresh."
+        : "This staff record could not be found in the latest dashboard data. The list will refresh.");
+      this.refresh();
+      return;
+    }
     var dialog = document.getElementById("portal-record-editor");
     if (!dialog) {
       dialog = document.createElement("dialog");
@@ -543,7 +553,7 @@ var PortalDashboard = {
     }
     var fields = kind === "pupils"
       ? [["admission_no","Admission number","text",true],["first_name","First name","text",true],["middle_name","Middle name","text",false],["last_name","Last name","text",true],["date_of_birth","Date of birth","date",false],["gender","Gender","gender",false],["class_id","Current class","class",false],["status","Status","status",true]]
-      : [["staff_no","Staff number","text",true],["full_name","Full name","text",true],["job_title","Job title","text",false],["status","Status","status",true]];
+      : [["staff_no","Staff number","text",true],["full_name","Full name","text",true],["job_title","Class / teaching role","text",false],["status","Account status","status",true]];
     var html = '<form id="portal-record-editor-form" class="form-stack" data-kind="' + kind + '" data-id="' + portalEscape(id) + '">' +
       '<div class="panel__head"><div><span class="eyebrow">School records</span><h2>Edit ' + (kind === "pupils" ? "student" : "staff") +
       ' record</h2></div><button type="button" class="btn btn--ghost btn--small" data-editor-close>Close</button></div>';
@@ -566,7 +576,9 @@ var PortalDashboard = {
           (kind === "pupils" ? ["active","graduated","withdrawn","suspended"] : ["active","inactive"]).map(function (v) { return '<option value="' + v + '"' + (value.toLowerCase() === v ? " selected" : "") + '>' + v.charAt(0).toUpperCase() + v.slice(1) + '</option>'; }).join("") + '</select>';
       } else {
         html += '<input class="form-control" type="' + field[2] + '" name="' + field[0] + '"' +
-          (field[3] ? " required" : "") + ' value="' + portalEscape(value) + '">';
+          (field[3] ? " required" : "") +
+          (field[0] === "job_title" ? ' placeholder="e.g. JSS 1 Class Teacher"' : "") +
+          ' value="' + portalEscape(value) + '">';
       }
       html += '</label>';
     });
