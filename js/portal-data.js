@@ -1017,7 +1017,7 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
         {
           id: "staff", title: "Manage staff", intro: "Staff records, roles and class allocations.",
           kind: "table", caption: "All staff",
-          columns: ["Staff no.", "Name", "Job title", "Classes", "Status"],
+          columns: ["Staff no.", "Name", "Class / teaching role", "Classes", "Status"],
           rows: staffRows,
           rowIds: staffList.map(function (s) { return s.id; }),
           emptyMessage: "No staff records match this search."
