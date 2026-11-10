@@ -138,7 +138,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
 
   function parentChildren(client, parentId) {
     return client.from("parent_students")
-      .select("id,relationship,student:students!inner(id,admission_no,first_name,last_name,gender,status)")
+      .select("id,relationship,student:students!inner(id,admission_no,first_name,middle_name,last_name,gender,status)")
       .eq("parent_id", parentId);
   }
 
@@ -282,7 +282,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                 data: {
                   role: "student",
                   roleLabel: "Student Portal",
-                  person: { name: fullName, meta: "Admission " + (student.admission_number || "Not assigned") + " · " + classLabel },
+                  person: { name: fullName, meta: "Student no. " + (student.admission_number || "Not assigned") + " · " + classLabel },
                   stats: [
                     { label: "Attendance", value: pct, hint: present + " of " + attendance.length + " entries marked", tone: "ok" },
                     { label: "Subjects", value: String(new Set(results.map(function (result) { return result.subject_id; }).concat(assignments.map(function (assignment) { return assignment.subject_id; })).filter(Boolean)).size), hint: "Subjects with records" },
@@ -297,7 +297,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                       columns: ["Item", "Detail"],
                       rows: [
                         ["Name", fullName],
-                        ["Admission number", student.admission_number || "Not assigned"],
+                        ["Student number", student.admission_number || "Not assigned"],
                         ["Class", classLabel],
                         ["Academic session", (session && session.name) || "Not set"],
                         ["Gender", student.gender || "Not recorded"],
@@ -487,7 +487,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                     columns: ["Item", "Detail"],
                     rows: [
                       ["Pupil", child.full_name || "Student"],
-                      ["Admission number", child.admission_number || "—"],
+                      ["Student number", child.admission_number || "—"],
                       ["Class", childClass],
                       ["Academic session", (session && session.name) || "Not set"],
                       ["Relationship", (parent.relationship_note || "Parent/guardian")]
@@ -534,7 +534,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                 return {
                   data: {
                     role: "parent", roleLabel: "Parent Portal",
-                    person: { name: parent.full_name || "Parent", meta: (child.full_name || "Child") + " · Admission " + (child.admission_number || "Not assigned") },
+                    person: { name: parent.full_name || "Parent", meta: (child.full_name || "Child") + " · Student no. " + (child.admission_number || "Not assigned") },
                     stats: [
                       { label: "Attendance", value: attendancePct, hint: present + " of " + attendance.length + " entries marked", tone: "ok" },
                       { label: "Days absent", value: String(attendance.filter(function (a) { return a.status === "absent"; }).length), hint: "Recorded absences" },
@@ -938,7 +938,7 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
       var studentRows = students.map(function (s) {
         return [
           s.admission_no || "—",
-          [s.first_name, s.last_name].filter(Boolean).join(" ") || "—",
+          [s.first_name, s.middle_name, s.last_name].filter(Boolean).join(" ") || "—",
           (enrolmentByStudent[s.id] && classById[enrolmentByStudent[s.id].class_id] ? classById[enrolmentByStudent[s.id].class_id].name : "Unassigned"),
           (s.status || "unknown").toUpperCase()
         ];
