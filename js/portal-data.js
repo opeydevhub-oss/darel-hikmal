@@ -867,7 +867,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
       client.from("announcements").select("id,title,body,audience,status,created_at").order("created_at", { ascending: false }),
       currentTerm(client),
       client.from("enrolments").select("student_id,class_id,session_id,status").eq("status", "active"),
-      client.from("teaching_assignments").select("id,staff_id,class_id,subject_id,session_id,is_class_teacher,staff:staff(id,full_name,staff_no),subject:subjects(id,name)").order("created_at"),
+      client.from("teaching_assignments").select("id,staff_id,class_id,subject_id,session_id,is_class_teacher,staff:staff(id,full_name,staff_no),classes:classes(id,name,level,arm),subject:subjects(id,name)").order("created_at"),
       client.from("subjects").select("id,name,code").eq("is_active", true).order("name")
     ]).then(function (r) {
       
@@ -1161,6 +1161,25 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
   PortalData.deleteStaff = function (id) {
     var client = c(); if (!client) { return Promise.resolve(nc()); }
     return client.from("staff").delete().eq("id", id);
+  };
+  PortalData.setStaffTeachingAssignment = function (staffId, payload) {
+    var client = c(); if (!client) { return Promise.resolve(nc()); }
+    return client.rpc("admin_set_staff_teaching_assignment", {
+      p_staff_id: staffId,
+      p_class_id: payload.class_id,
+      p_subject_id: payload.subject_id,
+      p_is_class_teacher: Boolean(payload.is_class_teacher),
+      p_assigned: payload.assigned !== false
+    }).then(function (res) {
+      if (res.error) return { data: null, error: res.error };
+      return invokeCbt("admin.sync_teacher_assignments", {
+        session_id: (window.PortalDashboard && window.PortalDashboard.config && window.PortalDashboard.config.adminSessionId) || null
+      }).then(function () {
+        return { data: true, error: null };
+      }).catch(function (error) {
+        return { data: null, error: { message: "School assignment saved, but CBT teacher synchronization failed: " + (error.message || "Unknown error") } };
+      });
+    });
   };
 
   /* ---- Classes, current-session enrolments and teacher assignments ---- */
