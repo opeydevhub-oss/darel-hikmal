@@ -235,8 +235,8 @@ var PortalDashboard = {
 
   panelById: function (id) {
     if (!this.config) { return null; }
-    if (this.role === "admin" && (id === "cbt-administration" || id === "academic-sessions")) {
-      return { id: id, title: id === "academic-sessions" ? "Academic sessions" : "CBT Management" };
+    if (this.role === "admin" && ["cbt-administration", "academic-sessions", "subjects"].indexOf(id) !== -1) {
+      return { id: id, title: id === "academic-sessions" ? "Academic sessions" : id === "subjects" ? "Manage subjects" : "CBT Management" };
     }
     return this.config.panels.filter(function (panel) { return panel.id === id; })[0] || null;
   },
@@ -254,6 +254,7 @@ var PortalDashboard = {
     var menuItems = this.config.panels.slice();
     if (this.role === "admin") {
       menuItems.push({ id: "academic-sessions", title: "Academic sessions", kind: "academic-sessions" });
+      menuItems.push({ id: "subjects", title: "Manage subjects", kind: "subjects" });
       menuItems.push({ id: "cbt-administration", title: "CBT Management", kind: "cbt" });
     }
     nav.innerHTML = menuItems.map(function (panel) {
@@ -398,8 +399,9 @@ var PortalDashboard = {
     });
 
     if (this.role === "admin") {
-      container.insertAdjacentHTML("beforeend", self.academicSessionsMarkup());
+      container.insertAdjacentHTML("beforeend", self.academicSessionsMarkup() + self.subjectsMarkup());
       self.loadAcademicSessions();
+      self.wireSubjectsPanel();
     }
 
     portalQueryAll("[data-dash-panel]").forEach(function (section) {
@@ -455,6 +457,72 @@ var PortalDashboard = {
         });
       });
     });
+  },
+
+  subjectsMarkup: function () {
+    var subjects = this.config.adminSubjects || [];
+    return '<section class="panel" id="panel-subjects" data-dash-panel="subjects" hidden aria-labelledby="heading-subjects" tabindex="-1">' +
+      '<div class="panel__head"><div><span class="eyebrow">Curriculum</span><h2 id="heading-subjects">Manage subjects</h2><p>Add, rename, deactivate or delete subjects used for teacher allocations and academic records.</p></div></div>' +
+      '<form id="admin-subject-form" class="form-grid"><label>New subject<input class="form-control" name="name" maxlength="80" placeholder="e.g. Basic Science" required></label><div class="form-actions"><button class="btn btn--primary" type="submit">Add subject</button></div></form>' +
+      '<div class="class-editor-list mt-1" data-admin-subject-list>' +
+      (subjects.length ? subjects.map(function (item) {
+        return '<div class="class-editor-choice"><span><strong>' + portalEscape(item.name) + '</strong><small>' + (item.is_active ? 'Active' : 'Inactive') + '</small></span><span class="btn-row">' +
+          '<button type="button" class="btn btn--small btn--outline-navy" data-subject-edit="' + portalEscape(item.id) + '">Edit</button>' +
+          '<button type="button" class="btn btn--small btn--ghost" data-subject-toggle="' + portalEscape(item.id) + '" data-active="' + String(!!item.is_active) + '">' + (item.is_active ? 'Deactivate' : 'Activate') + '</button>' +
+          '<button type="button" class="btn btn--small btn--ghost" data-subject-delete="' + portalEscape(item.id) + '">Delete</button></span></div>';
+      }).join('') : '<p class="muted">No subjects yet. Add Mathematics and English are already available as the starting subjects.</p>') +
+      '</div><p class="muted" data-subject-admin-message role="status"></p></section>';
+  },
+
+  wireSubjectsPanel: function () {
+    var self = this;
+    var section = portalQuery("#panel-subjects");
+    if (!section || section.dataset.subjectsBound) return;
+    var form = section.querySelector("#admin-subject-form");
+    var message = section.querySelector("[data-subject-admin-message]");
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var input = form.elements.name;
+      var name = input.value.trim();
+      if (!name) return;
+      var code = name.toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 10) || "SUBJECT";
+      PortalData.createSubject({ name: name, code: code, is_active: true }).then(function (result) {
+        if (result.error) throw new Error(result.error.message || "Could not add subject.");
+        self.refresh();
+      }).catch(function (error) { message.textContent = error.message || "Could not add subject."; });
+    });
+    section.addEventListener("click", function (event) {
+      var edit = event.target.closest("[data-subject-edit]");
+      var toggle = event.target.closest("[data-subject-toggle]");
+      var del = event.target.closest("[data-subject-delete]");
+      if (edit) {
+        var record = (self.config.adminSubjects || []).find(function (x) { return x.id === edit.getAttribute("data-subject-edit"); });
+        if (!record) return;
+        var name = window.prompt("Edit subject name:", record.name);
+        if (name === null) return;
+        name = name.trim();
+        if (!name) { message.textContent = "Subject name cannot be empty."; return; }
+        PortalData.updateSubject(record.id, { name: name }).then(function (result) {
+          if (result.error) throw new Error(result.error.message || "Could not update subject.");
+          self.refresh();
+        }).catch(function (error) { message.textContent = error.message || "Could not update subject."; });
+      } else if (toggle) {
+        var id = toggle.getAttribute("data-subject-toggle");
+        var active = toggle.getAttribute("data-active") !== "true";
+        PortalData.updateSubject(id, { is_active: active }).then(function (result) {
+          if (result.error) throw new Error(result.error.message || "Could not update subject.");
+          self.refresh();
+        }).catch(function (error) { message.textContent = error.message || "Could not update subject."; });
+      } else if (del) {
+        var deleteId = del.getAttribute("data-subject-delete");
+        if (!window.confirm("Delete this subject? Subjects already used in teaching assignments or academic records may be protected.")) return;
+        PortalData.deleteSubject(deleteId).then(function (result) {
+          if (result.error) throw new Error(result.error.message || "Could not delete subject.");
+          self.refresh();
+        }).catch(function (error) { message.textContent = error.message || "Could not delete subject. Deactivate it instead if it is already in use."; });
+      }
+    });
+    section.dataset.subjectsBound = "true";
   },
 
   academicSessionsMarkup: function () {
@@ -589,7 +657,7 @@ var PortalDashboard = {
         var label = [item.name, item.level, item.arm].filter(Boolean).join(" · ");
         return '<option value="' + portalEscape(item.id) + '">' + portalEscape(label) + '</option>';
       }).join("");
-      var subjectOptions = (this.config.adminSubjects || []).map(function (item) {
+      var subjectOptions = (this.config.adminSubjects || []).filter(function (item) { return item.is_active !== false; }).map(function (item) {
         return '<option value="' + portalEscape(item.id) + '">' + portalEscape(item.name) + '</option>';
       }).join("");
       html += '<section class="class-editor-section staff-assignment-editor">' +
