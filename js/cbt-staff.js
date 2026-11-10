@@ -268,9 +268,10 @@
           '<label id="cbt-staff-answer-wrap">Correct answer<input class="form-control" name="answer_key" placeholder="A, B, C… or True/False"></label>' +
           '<label>Question<textarea class="form-control" name="prompt" rows="3" required maxlength="5000"></textarea></label></div>' +
           '<button class="btn btn--primary mt-1" type="submit">Save question</button></form>' +
+        '<form id="cbt-staff-review-report" class="mt-2" hidden><h4>Teacher review and submission</h4><p class="muted">After the examination is closed, check the automatically marked scores and submit this report to the administrator. If the exam contains only multiple-choice or true/false questions, no manual Save mark step is needed.</p><label>Review notes (optional)<textarea class="form-control" name="note" rows="3" maxlength="1500"></textarea></label><button class="btn btn--primary mt-1" type="submit">Submit results for administrator review</button><p class="form-field__hint" id="cbt-review-report-status" role="status"></p></form>' +
         '<section class="mt-2"><h4>Automatically marked results</h4><p class="muted">Objective questions are marked automatically from the correct answers you select.</p><div id="cbt-staff-results-review" class="table-wrap"><p class="muted">No results loaded.</p></div></section>' +
         '<section class="mt-2"><h4>Written responses awaiting marking</h4><div id="cbt-manual-responses"><p class="muted">Select an examination to load written responses.</p></div></section>' +
-        '<form id="cbt-staff-review-report" class="mt-2" hidden><h4>Submit review report to the administrator</h4><p class="muted">Submit after checking auto-marked scores and completing written-answer marking.</p><label>Review notes (optional)<textarea class="form-control" name="note" rows="3" maxlength="1500"></textarea></label><button class="btn btn--primary mt-1" type="submit">Submit review report</button><p class="form-field__hint" id="cbt-review-report-status" role="status"></p></form>' +
+
       "</section>" +
     "</section>" +
     '<section id="cbt-invig-panel" hidden><h3>Invigilator verification</h3><p>Use the examination PIN supplied by the subject teacher to authorize each student by admission number.</p>' +
@@ -367,7 +368,7 @@
         await call("staff.close_exam", { exam_id: selected.id });
         await load();
         await openExam(selected.id);
-        status("Examination closed. The teacher can now complete written marking and submit the review report.");
+        status("Examination closed. Review the automatically marked scores, then submit the review report to the administrator.");
       } catch (error) {
         status(error.message, true);
       } finally {
