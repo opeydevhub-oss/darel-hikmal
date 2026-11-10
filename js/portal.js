@@ -916,7 +916,7 @@ var PortalDashboard = {
       '<label>First name<input class="form-control" name="first_name" required maxlength="80" autocomplete="given-name"></label>' +
       '<label>Surname<input class="form-control" name="last_name" required maxlength="80" autocomplete="family-name"></label>' +
       '</div>' +
-      '<label>Middle name (optional)<input class="form-control" name="middle_name" required maxlength="80" autocomplete="additional-name"></label>' +
+      '<label>Third name / middle name<input class="form-control" name="middle_name" required maxlength="80" autocomplete="additional-name"></label>' +
       '<label>Class<select class="form-control" name="class_id" required><option value="">Choose a class</option>' +
       classes.map(function (item) {
         var label = [item.name, item.level, item.arm].filter(Boolean).join(" · ");
