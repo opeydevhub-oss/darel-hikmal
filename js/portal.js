@@ -607,7 +607,7 @@ var PortalDashboard = {
       standardLevels.unshift(classRecord.level);
     }
 
-    var html = '<form id="portal-class-editor-form" class="form-stack">' +
+    var html = '<form id="portal-class-editor-form" class="form-stack" novalidate>' +
       '<div class="panel__head"><div><span class="eyebrow">Class management</span><h2>' +
       (isEdit ? "Edit class and allocations" : "Create class and allocations") +
       '</h2><p>Choose existing pupils and assign teachers to subjects.</p></div>' +
@@ -642,7 +642,7 @@ var PortalDashboard = {
       '</section>' +
       (this.config.adminSessionId ? '<p class="muted">Assignments apply to the current academic session.</p>' :
         '<p class="notice notice--warn">No current academic session is set. You can save class details, but cannot assign students or teachers yet.</p>') +
-      '<p class="muted" data-class-message role="status"></p><div class="btn-row">' +
+      '<p class="notice" data-class-message role="status" aria-live="polite" hidden></p><div class="btn-row">' +
       '<button class="btn btn--primary" type="submit">Save class and allocations</button>' +
       '<button class="btn btn--outline-navy" type="button" data-class-close>Cancel</button></div></form>';
 
@@ -714,6 +714,19 @@ var PortalDashboard = {
       var message = form.querySelector("[data-class-message]");
       var submit = form.querySelector('[type="submit"]');
       var formData = new FormData(form);
+      function showClassMessage(text, tone) {
+        message.hidden = false;
+        message.className = "notice notice--" + tone;
+        message.textContent = text;
+        message.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      var className = String(formData.get("name") || "").trim();
+      var classLevel = String(formData.get("level") || "").trim();
+      if (!className || !classLevel) {
+        showClassMessage(!className ? "Enter a class name." : "Choose a class level before saving.", "error");
+        form.querySelector(!className ? '[name="name"]' : '[name="level"]').focus();
+        return;
+      }
       var teacherSubjects = formData.getAll("teacher_subject");
       var classTeachers = formData.getAll("class_teacher");
       var classTeacherIds = new Set(classTeachers);
@@ -725,19 +738,21 @@ var PortalDashboard = {
         return !teacherSubjects.some(function (value) { return String(value).split("|")[0] === staffId; });
       });
       if (hasInvalidClassTeacher) {
-        message.textContent = "A class teacher must also be assigned at least one subject.";
+        showClassMessage("A class teacher must also be assigned at least one subject. Add a subject, then tick it under this teacher.", "error");
         return;
       }
       if (classTeachers.length > 1) {
-        message.textContent = "Choose only one class teacher.";
+        showClassMessage("Choose only one class teacher for this class.", "error");
         return;
       }
       var studentIds = formData.getAll("student_ids");
       if (!self.config.adminSessionId && (studentIds.length || teacherAssignments.length)) {
-        message.textContent = "Set the current academic session before assigning students or teachers.";
+        showClassMessage("Set the current academic session before assigning students or teachers.", "error");
         return;
       }
       submit.disabled = true;
+      message.hidden = false;
+      message.className = "notice notice--info";
       message.textContent = "Saving class and allocations…";
       PortalData.saveClassRoster({
         id: classId,
@@ -749,12 +764,16 @@ var PortalDashboard = {
         teacher_assignments: teacherAssignments
       }).then(function (result) {
         if (result.error) throw new Error(result.error.message || "Could not save this class.");
+        message.className = "notice notice--success";
         message.textContent = "Class, student membership and teacher allocations saved.";
         dialog.close();
         window.dispatchEvent(new Event("school:class-roster-updated"));
         self.refresh();
       }).catch(function (error) {
+        message.hidden = false;
+        message.className = "notice notice--error";
         message.textContent = error.message || "Could not save the class allocations.";
+        message.scrollIntoView({ behavior: "smooth", block: "center" });
         submit.disabled = false;
       });
     });
