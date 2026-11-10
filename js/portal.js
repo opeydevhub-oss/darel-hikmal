@@ -238,6 +238,9 @@ var PortalDashboard = {
     if (this.role === "admin" && ["cbt-administration", "academic-sessions", "subjects"].indexOf(id) !== -1) {
       return { id: id, title: id === "academic-sessions" ? "Academic sessions" : id === "subjects" ? "Manage subjects" : "CBT Management" };
     }
+    if (this.role === "staff" && id === "cbt-staff-tools") {
+      return { id: id, title: "CBT & Examinations" };
+    }
     return this.config.panels.filter(function (panel) { return panel.id === id; })[0] || null;
   },
 
@@ -256,6 +259,8 @@ var PortalDashboard = {
       menuItems.push({ id: "academic-sessions", title: "Academic sessions", kind: "academic-sessions" });
       menuItems.push({ id: "subjects", title: "Manage subjects", kind: "subjects" });
       menuItems.push({ id: "cbt-administration", title: "CBT Management", kind: "cbt" });
+    } else if (this.role === "staff") {
+      menuItems.push({ id: "cbt-staff-tools", title: "CBT & Examinations", kind: "cbt" });
     }
     nav.innerHTML = menuItems.map(function (panel) {
       return '<a class="dash__nav-link" href="#' + panel.id + '" data-dash-link="' + panel.id + '">' +
@@ -316,12 +321,16 @@ var PortalDashboard = {
     portalQueryAll("[data-dash-panel]").forEach(function (section) {
       section.hidden = section.getAttribute("data-dash-panel") !== id;
     });
-    var cbtPanel = portalQuery("#cbt-admin-panel");
-    if (cbtPanel) cbtPanel.hidden = id !== "cbt-administration";
+    var isAdminCbt = this.role === "admin" && id === "cbt-administration";
+    var isStaffCbt = this.role === "staff" && id === "cbt-staff-tools";
+    var cbtPanel = this.role === "admin"
+      ? portalQuery("#cbt-admin-panel")
+      : portalQuery("#cbt-staff-tools");
+    if (cbtPanel) cbtPanel.hidden = !(isAdminCbt || isStaffCbt);
     var academicPanel = portalQuery("#panel-academic-sessions");
     if (academicPanel) academicPanel.hidden = id !== "academic-sessions";
 
-    var target = id === "cbt-administration" ? cbtPanel : portalQuery("#panel-" + id);
+    var target = (isAdminCbt || isStaffCbt) ? cbtPanel : portalQuery("#panel-" + id);
     if (target) {
       var reduced = typeof REDUCED_MOTION !== "undefined" && REDUCED_MOTION.matches;
       target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
