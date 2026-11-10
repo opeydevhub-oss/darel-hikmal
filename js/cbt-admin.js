@@ -211,10 +211,10 @@
         output.hidden = false;
         var expires = new Date(pin.expires_at).toLocaleString();
         var classRecord = (state.data.classes || []).find(function (item) { return item.id === state.exam.class_id; });
-        var shareText = "Darel Hikmah International Academy\\nExamination: " + state.exam.title +
-          "\\nClass: " + (classRecord ? classRecord.name : "Selected class") +
-          "\\nStudent PIN: " + pin.pin + "\\nExpires: " + expires +
-          "\\nStudents should enter their student number and this PIN on the CBT portal.";
+        var shareText = "Darel Hikmah International Academy\nExamination: " + state.exam.title +
+          "\nClass: " + (classRecord ? classRecord.name : "Selected class") +
+          "\nStudent PIN: " + pin.pin + "\nExpires: " + expires +
+          "\nStudents should enter their student number and this PIN on the CBT portal.";
         output.innerHTML = "<strong>Examination PIN: " + escapeHtml(pin.pin) + "</strong><p>" +
           escapeHtml(pin.note) + "</p><p>Expires: " + escapeHtml(expires) + "</p>" +
           '<button type="button" class="btn btn--small btn--outline-navy" data-copy-cbt-pin>Copy WhatsApp message</button>';
