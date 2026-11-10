@@ -885,3 +885,26 @@ body.portal-body { background: var(--bg-soft); }
 .academic-session-list li { display:grid; gap:.2rem; padding:.85rem; border:1px solid var(--line); border-radius:var(--radius); background:#fff; }
 .academic-session-list li span { color:var(--ink-muted); font-size:.9rem; }
 @media(max-width:600px) { .academic-session-panel .form-grid { grid-template-columns:1fr; } }
+
+/* Clear, touch-friendly controls inside the class allocation editor. */
+.portal-class-editor .class-subject-add__row .btn--outline-navy {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:46px;
+  padding:.7rem 1rem;
+  border:1px solid #0c2350;
+  border-radius:.65rem;
+  background:#fff;
+  color:#0c2350;
+  font-weight:700;
+  line-height:1.25;
+  white-space:normal;
+}
+.portal-class-editor [data-class-message] { margin:.75rem 0; padding:.85rem 1rem; border-radius:.7rem; }
+.portal-class-editor [data-class-message][hidden] { display:none; }
+.portal-class-editor .class-editor-subjects { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; margin-top:.75rem; }
+@media(max-width:600px) {
+  .portal-class-editor .class-editor-subjects { grid-template-columns:1fr; }
+  .portal-class-editor .class-subject-add__row .btn--outline-navy { width:100%; }
+}
