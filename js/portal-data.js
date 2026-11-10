@@ -227,7 +227,10 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                 ? client.from("teaching_assignments")
                     .select("is_class_teacher,staff:staff!inner(full_name,job_title),subject:subjects(name)")
                     .in("class_id", classIds).eq("session_id", term.session_id)
-                : Promise.resolve({ data: [], error: null })
+                : Promise.resolve({ data: [], error: null }),
+              invokeCbt("student.released_results").then(function (value) {
+                return { data: value.results || [], error: null };
+              }).catch(function () { return { data: [], error: null }; })
             ];
 
             return Promise.all(requests).then(function (r) {
@@ -245,6 +248,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
               });
               var session = r[6].data;
               var teacherAssignments = r[7].data || [];
+              var cbtResults = r[8].data || [];
               var teacherRecords = teacherAssignments.map(function (item) {
                 var teacherName = item.staff && item.staff.full_name ? item.staff.full_name : "Teacher";
                 var subjectName = item.subject && item.subject.name ? item.subject.name : "Subject";
@@ -271,7 +275,14 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                   badge: "Published",
                   body: result.published_at ? "Published " + fmtDate(result.published_at) : "Published result"
                 };
-              });
+              }).concat(cbtResults.map(function (result) {
+                return {
+                  title: result.exam_title,
+                  meta: result.subject_name + " · Score: " + result.score + " / " + result.max_score,
+                  badge: "CBT result released",
+                  body: result.session_name + " · Published " + fmtDate(result.released_at)
+                };
+              }));
               var workRecords = assignments.map(function (a) {
                 return { title: a.title, meta: (a.subject && a.subject.name ? a.subject.name + " · " : "") + (a.due_date ? "Due " + fmtDate(a.due_date) : "No due date"), badge: "Assignment", body: a.description || "" };
               }).concat(materials.map(function (m) {
@@ -444,7 +455,10 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                 classIds.length
                   ? client.from("learning_materials").select("id,title,created_at,class_id,subject:subjects(name)").in("class_id", classIds).eq("status", "published").order("created_at", { ascending: false })
                   : Promise.resolve({ data: [], error: null }),
-                client.from("academic_sessions").select("name").eq("is_current", true).maybeSingle()
+                client.from("academic_sessions").select("name").eq("is_current", true).maybeSingle(),
+                invokeCbt("parent.released_results").then(function (value) {
+                  return { data: value.results || [], error: null };
+                }).catch(function () { return { data: [], error: null }; })
               ];
 
               return Promise.all(requests).then(function (r) {
@@ -461,6 +475,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                 var assignments = r[4].data || [];
                 var materials = r[5].data || [];
                 var session = r[6].data;
+                var cbtResults = r[7].data || [];
                 var present = attendance.filter(function (a) { return a.status === "present"; }).length;
                 var attendancePct = attendance.length ? Math.round(present / attendance.length * 100) + "%" : "—";
                 var totalFees = fees.reduce(function (sum, fee) { return sum + Number(fee.amount_due_kobo || 0) / 100; }, 0);
@@ -472,7 +487,14 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
                     badge: "Published",
                     body: result.published_at ? "Published " + fmtDate(result.published_at) : "Published result"
                   };
-                });
+                }).concat(cbtResults.map(function (result) {
+                  return {
+                    title: result.student_name + " · " + result.exam_title,
+                    meta: result.subject_name + " · Score: " + result.score + " / " + result.max_score,
+                    badge: "CBT result released",
+                    body: result.session_name + " · Published " + fmtDate(result.released_at)
+                  };
+                }));
                 var workRecords = assignments.map(function (a) {
                   return { title: a.title, meta: (a.subject && a.subject.name ? a.subject.name + " · " : "") + (a.due_date ? "Due " + fmtDate(a.due_date) : "No due date"), badge: "Assignment", body: a.description || "" };
                 }).concat(materials.map(function (m) {
