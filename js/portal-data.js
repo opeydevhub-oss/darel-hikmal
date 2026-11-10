@@ -983,7 +983,7 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
         return [
           "FR-" + String(f.id).padStart(4, "0"),
           studentById[f.student_id]
-  ? [studentById[f.student_id].first_name, studentById[f.student_id].last_name].filter(Boolean).join(" ")
+  ? [studentById[f.student_id].first_name, studentById[f.student_id].middle_name, studentById[f.student_id].last_name].filter(Boolean).join(" ")
   : "—",
           (f.fee_type || "School fee") + " (" + (term ? term.name : "") + ")",
           money(Number(f.amount_due_kobo || 0) / 100),
@@ -1009,7 +1009,7 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
         {
           id: "pupils", title: "Manage pupils", intro: "Add, move or update pupil records.",
           kind: "table", caption: "All pupils on roll",
-          columns: ["Admission no.", "Pupil", "Class", "Status"],
+          columns: ["Student no.", "Student", "Class", "Status"],
           rows: studentRows,
           rowIds: students.map(function (s) { return s.id; }),
           emptyMessage: "No pupils match this search."
