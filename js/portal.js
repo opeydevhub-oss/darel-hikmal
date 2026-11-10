@@ -660,6 +660,15 @@ var PortalDashboard = {
       html += '</label>';
     });
 
+    if (kind === "pupils") {
+      html += '<section class="class-editor-section"><h3>Parent / Guardian links</h3>' +
+        '<p class="muted">Link an existing parent login to this student. One parent can be linked to several children.</p>' +
+        '<label>Existing parent<select class="form-control" name="link_parent_profile_id" data-link-parent-select><option value="">Loading parent accounts…</option></select></label>' +
+        '<label>Relationship<select class="form-control" name="link_parent_relationship"><option>Mother</option><option>Father</option><option>Guardian</option><option>Other</option></select></label>' +
+        '<div class="btn-row"><button type="button" class="btn btn--outline-navy btn--small" data-link-parent>Link parent</button></div>' +
+        '<div data-student-parent-links><p class="muted">Loading linked parents…</p></div></section>';
+    }
+
     if (kind === "staff") {
       var staffAssignments = (this.config.adminTeachingAssignments || []).filter(function (item) { return item.staff_id === id; });
       var classOptions = (this.config.adminClasses || []).map(function (item) {
@@ -692,6 +701,55 @@ var PortalDashboard = {
     html += '<p class="muted" data-editor-message role="status"></p><div class="btn-row"><button class="btn btn--primary" type="submit">Save changes</button><button class="btn btn--outline-navy" type="button" data-editor-close>Cancel</button></div></form>';
     dialog.innerHTML = html;
     if (!dialog.open) dialog.showModal();
+    if (kind === "pupils") {
+      var parentSelect = dialog.querySelector("[data-link-parent-select]");
+      var parentLinks = dialog.querySelector("[data-student-parent-links]");
+      function refreshParentLinks() {
+        PortalData.getStudentParentLinks(id).then(function (linksRes) {
+          if (linksRes.error) throw new Error(linksRes.error.message || "Could not load parent links.");
+          var links = linksRes.data || [];
+          parentLinks.innerHTML = links.length ? '<div class="class-editor-list">' + links.map(function (link) {
+            var parent = link.parents || {};
+            return '<div class="class-editor-choice"><span><strong>' + portalEscape(parent.full_name || "Parent") +
+              '</strong><small>' + portalEscape(link.relationship || "Guardian") + '</small></span>' +
+              '<button type="button" class="btn btn--small btn--ghost" data-unlink-parent="' + portalEscape(parent.id) + '">Unlink</button></div>';
+          }).join("") + '</div>' : '<p class="muted">No parent is linked to this student yet.</p>';
+        }).catch(function (error) { parentLinks.textContent = error.message || "Could not load parent links."; });
+      }
+      PortalData.getParentProfiles().then(function (res) {
+        if (res.error) throw new Error(res.error.message || "Could not load parent accounts.");
+        parentSelect.innerHTML = '<option value="">Choose an existing parent</option>' + (res.data || []).map(function (p) {
+          return '<option value="' + portalEscape(p.id) + '">' + portalEscape((p.full_name || "Parent") + " · " + (p.email || "No email")) + '</option>';
+        }).join("");
+      }).catch(function (error) { parentSelect.innerHTML = '<option value="">' + portalEscape(error.message || "Could not load parent accounts") + '</option>'; });
+      refreshParentLinks();
+      dialog.querySelector("[data-link-parent]").addEventListener("click", function () {
+        var profileId = parentSelect.value;
+        if (!profileId) { window.alert("Choose an existing parent account first."); return; }
+        var button = dialog.querySelector("[data-link-parent]");
+        button.disabled = true;
+        PortalData.manageParent({
+          action: "link_existing", student_id: id, parent_profile_id: profileId,
+          relationship: dialog.querySelector('[name="link_parent_relationship"]').value
+        }).then(function (res) {
+          if (res.error) throw new Error(res.error.message || "Could not link parent.");
+          refreshParentLinks();
+          parentSelect.value = "";
+        }).catch(function (error) { window.alert(error.message || "Could not link parent."); })
+          .finally(function () { button.disabled = false; });
+      });
+      parentLinks.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-unlink-parent]");
+        if (!button || !window.confirm("Unlink this parent from the student? The parent login will remain active.")) return;
+        button.disabled = true;
+        PortalData.manageParent({ action: "unlink", student_id: id, parent_id: button.getAttribute("data-unlink-parent") })
+          .then(function (res) {
+            if (res.error) throw new Error(res.error.message || "Could not unlink parent.");
+            refreshParentLinks();
+          }).catch(function (error) { window.alert(error.message || "Could not unlink parent."); })
+          .finally(function () { button.disabled = false; });
+      });
+    }
     dialog.querySelectorAll("[data-editor-close]").forEach(function (button) {
       button.addEventListener("click", function () { dialog.close(); });
     });
@@ -1124,6 +1182,14 @@ var PortalDashboard = {
         return '<option value="' + portalEscape(item.id) + '">' + portalEscape(label) + '</option>';
       }).join("") +
       '</select></label>' +
+      '<section class="class-editor-section"><h3>Parent / Guardian (optional)</h3>' +
+      '<label>Parent account<select class="form-control" name="parent_mode"><option value="none">Link later</option><option value="existing">Use an existing parent account</option><option value="new">Create a new parent account</option></select></label>' +
+      '<div data-existing-parent-fields hidden><label>Choose parent<select class="form-control" name="parent_profile_id"><option value="">Loading parent accounts…</option></select></label></div>' +
+      '<div data-new-parent-fields hidden><label>Parent full name<input class="form-control" name="parent_full_name" maxlength="120" autocomplete="name"></label>' +
+      '<label>Parent email<input class="form-control" type="email" name="parent_email" maxlength="254" autocomplete="email"></label>' +
+      '<label>Parent phone (optional)<input class="form-control" name="parent_phone" maxlength="30" autocomplete="tel"></label></div>' +
+      '<label>Relationship<select class="form-control" name="parent_relationship"><option>Mother</option><option>Father</option><option>Guardian</option><option>Other</option></select></label>' +
+      '<p class="muted">An existing parent login will be reused. A new parent gets a separate login and one-time initial password.</p></section>' +
       '<p class="muted">The system creates the student&#39;s portal account, generates a permanent student number and adds them to the current academic session.</p>' +
       '<div class="notice mt-1" data-enrolment-result hidden role="status" aria-live="polite"></div>' +
       '<button class="btn btn--primary" type="submit">Enrol student and create account</button>' +
@@ -1133,6 +1199,27 @@ var PortalDashboard = {
   wireEnrolment: function (form, panel) {
     var self = this;
     var result = portalQuery("[data-enrolment-result]", form);
+    var parentMode = form.elements.parent_mode;
+    var existingFields = form.querySelector("[data-existing-parent-fields]");
+    var newFields = form.querySelector("[data-new-parent-fields]");
+    function updateParentFields() {
+      var mode = parentMode ? parentMode.value : "none";
+      if (existingFields) existingFields.hidden = mode !== "existing";
+      if (newFields) newFields.hidden = mode !== "new";
+    }
+    if (parentMode) {
+      parentMode.addEventListener("change", updateParentFields);
+      updateParentFields();
+      PortalData.getParentProfiles().then(function (res) {
+        var select = form.elements.parent_profile_id;
+        if (!select) return;
+        if (res.error) { select.innerHTML = '<option value="">Could not load parent accounts</option>'; return; }
+        var parents = res.data || [];
+        select.innerHTML = '<option value="">Choose an existing parent</option>' + parents.map(function (p) {
+          return '<option value="' + portalEscape(p.id) + '">' + portalEscape((p.full_name || "Parent") + " · " + (p.email || "No email")) + '</option>';
+        }).join("");
+      });
+    }
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       var submit = portalQuery('[type="submit"]', form);
@@ -1155,6 +1242,43 @@ var PortalDashboard = {
       PortalData.enrolStudent(payload).then(function (res) {
         if (res.error || !res.data) throw new Error(res.error && res.error.message || "Student enrolment failed.");
         var student = res.data;
+        var parentModeValue = payload.parent_mode || "none";
+        if (parentModeValue === "existing" || parentModeValue === "new") {
+          var parentPayload = {
+            action: parentModeValue === "existing" ? "link_existing" : "create_and_link",
+            student_id: student.student_id,
+            relationship: payload.parent_relationship || "Guardian"
+          };
+          if (parentModeValue === "existing") {
+            parentPayload.parent_profile_id = payload.parent_profile_id;
+            if (!parentPayload.parent_profile_id) throw new Error("Choose an existing parent account.");
+          } else {
+            parentPayload.full_name = payload.parent_full_name;
+            parentPayload.email = payload.parent_email;
+            parentPayload.phone = payload.parent_phone;
+            if (!parentPayload.full_name || !parentPayload.email) throw new Error("Enter the new parent's name and email before enrolling.");
+          }
+          PortalData.manageParent(parentPayload).then(function (parentResult) {
+            if (parentResult.error) {
+              if (result) {
+                result.hidden = false;
+                result.className = "notice notice--warn";
+                result.textContent = "Student enrolled, but the parent could not be linked: " + parentResult.error.message + " You can link the parent from Manage pupils → Edit.";
+              }
+            } else if (parentResult.data && parentResult.data.initial_password && result) {
+              result.dataset.parentCredentials = "Parent login: " + (parentResult.data.parent_email || payload.parent_email) +
+                "\nInitial password: " + parentResult.data.initial_password;
+            } else if (result) {
+              result.dataset.parentLinked = "true";
+            }
+          }).catch(function (error) {
+            if (result) {
+              result.hidden = false;
+              result.className = "notice notice--warn";
+              result.textContent = "Student enrolled, but parent linking needs attention: " + (error.message || "Please link the parent from Manage pupils → Edit.");
+            }
+          });
+        }
         var credentials = "Student number: " + student.student_number + "\nInitial password: " + student.initial_password;
         var warning = student.cbt_sync_warning
           ? '<p class="notice notice--warn">' + portalEscape(student.cbt_sync_warning) + '</p>'
@@ -1171,6 +1295,15 @@ var PortalDashboard = {
             warning +
             '<div class="btn-row"><button class="btn btn--outline-navy btn--small" type="button" data-copy-student-credentials>Copy credentials</button>' +
             '<button class="btn btn--primary btn--small" type="button" data-refresh-students>Refresh dashboard</button></div></div>';
+          if (result && result.dataset.parentCredentials) {
+            credentials += "\n\n" + result.dataset.parentCredentials;
+            var parentInfo = document.createElement("p");
+            parentInfo.textContent = "Parent account created. Copy the parent login details securely as well.";
+            result.querySelector("div").appendChild(parentInfo);
+            var parentPassword = document.createElement("p");
+            parentPassword.textContent = result.dataset.parentCredentials;
+            result.querySelector("div").appendChild(parentPassword);
+          }
           var copy = portalQuery("[data-copy-student-credentials]", result);
           if (copy) copy.addEventListener("click", function () {
             if (navigator.clipboard && navigator.clipboard.writeText) {
