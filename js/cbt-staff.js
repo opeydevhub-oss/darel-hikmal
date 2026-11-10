@@ -69,15 +69,25 @@
   }
 
   function renderExams() {
-    var target = document.getElementById(data && data.staff_role === "invigilator" ? "cbt-staff-invig-exams" : "cbt-staff-exams");
+    var isInvigilator = data && data.staff_role === "invigilator";
+    var target = document.getElementById(isInvigilator ? "cbt-staff-invig-exams" : "cbt-staff-exams");
     if (!target) return;
     var exams = data.exams || [];
     if (!exams.length) {
-      target.innerHTML = '<tr><td colspan="5" class="muted">No examinations have been created for your assigned subjects yet.</td></tr>';
+      target.innerHTML = '<tr><td colspan="' + (isInvigilator ? "4" : "5") +
+        '" class="muted">' + (isInvigilator
+          ? "No invigilation assignments have been added to your account yet."
+          : "No examinations have been created for your assigned subjects yet.") + "</td></tr>";
       return;
     }
     target.innerHTML = exams.map(function (exam) {
       var assignment = assignmentForExam(exam);
+      if (isInvigilator) {
+        return "<tr><td>" + esc(exam.title) + "</td><td>" +
+          esc(new Date(exam.starts_at).toLocaleString()) + "</td><td>" +
+          esc(exam.status) + "</td><td><button class='btn btn--outline-navy btn--small' type='button' data-staff-exam='" +
+          esc(exam.id) + "'>Select</button></td></tr>";
+      }
       return "<tr><td>" + esc(exam.title) + "</td><td>" +
         esc(assignment ? assignment.class_name : "Assigned class") + "</td><td>" +
         esc(assignment ? assignment.subject_name : "Assigned subject") + "</td><td>" +
@@ -85,7 +95,6 @@
         esc(exam.id) + "'>Open</button></td></tr>";
     }).join("");
   }
-
   function localDateTime(value) {
     var local = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0, 16);
