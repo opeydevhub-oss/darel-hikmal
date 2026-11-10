@@ -16,6 +16,7 @@ const headers = {
   "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Content-Type": "application/json; charset=utf-8",
+  "Cache-Control": "no-store",
 };
 function reply(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers });
@@ -63,7 +64,7 @@ Deno.serve(async (req: Request) => {
     const middle = String(body.middle_name || "").trim();
     const last = String(body.last_name || "").trim();
     const classId = String(body.class_id || "");
-    if (!first || !last || !classId) fail(400, "Enter the student's first name, surname and class.");
+    if (!first || !middle || !last || !classId) fail(400, "Enter the student's first, middle and last names, then choose a class.");
     if (first.length > 80 || middle.length > 80 || last.length > 80) fail(400, "Student names must be 80 characters or fewer.");
 
     const term = await service.from("terms").select("session_id").eq("is_current", true).maybeSingle();
