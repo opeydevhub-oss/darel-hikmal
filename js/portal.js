@@ -923,7 +923,7 @@ var PortalDashboard = {
         return '<option value="' + portalEscape(item.id) + '">' + portalEscape(label) + '</option>';
       }).join("") +
       '</select></label>' +
-      '<p class="muted">The system creates the student's portal account, generates a permanent student number and adds them to the current academic session.</p>' +
+      '<p class="muted">The system creates the student&#39;s portal account, generates a permanent student number and adds them to the current academic session.</p>' +
       '<div class="notice mt-1" data-enrolment-result hidden role="status" aria-live="polite"></div>' +
       '<button class="btn btn--primary" type="submit">Enrol student and create account</button>' +
       '</form>';
