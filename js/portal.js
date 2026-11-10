@@ -916,7 +916,7 @@ var PortalDashboard = {
       '<label>First name<input class="form-control" name="first_name" required maxlength="80" autocomplete="given-name"></label>' +
       '<label>Surname<input class="form-control" name="last_name" required maxlength="80" autocomplete="family-name"></label>' +
       '</div>' +
-      '<label>Middle name (optional)<input class="form-control" name="middle_name" maxlength="80" autocomplete="additional-name"></label>' +
+      '<label>Middle name (optional)<input class="form-control" name="middle_name" required maxlength="80" autocomplete="additional-name"></label>' +
       '<label>Class<select class="form-control" name="class_id" required><option value="">Choose a class</option>' +
       classes.map(function (item) {
         var label = [item.name, item.level, item.arm].filter(Boolean).join(" · ");
@@ -936,11 +936,11 @@ var PortalDashboard = {
       event.preventDefault();
       var submit = portalQuery('[type="submit"]', form);
       var payload = Object.fromEntries(new FormData(form).entries());
-      if (!payload.first_name || !payload.last_name || !payload.class_id) {
+      if (!payload.first_name || !payload.middle_name || !payload.last_name || !payload.class_id) {
         if (result) {
           result.hidden = false;
           result.className = "notice notice--error";
-          result.textContent = "Enter the student's first name, surname and class.";
+          result.textContent = "Enter the student's first, middle and last names, then choose a class.";
         }
         return;
       }
