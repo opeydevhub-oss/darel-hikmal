@@ -903,7 +903,7 @@ var PortalDashboard = {
     var staffList = (this.config.adminStaff || []).filter(function (item) { return item.status === "active"; });
     var students = (this.config.adminStudents || []).filter(function (item) { return item.status === "active"; });
     var subjects = this.config.adminSubjects || [];
-    var standardLevels = ["Junior Secondary", "Senior Secondary"];
+    var standardLevels = ["Basic"];
     if (classRecord.level && standardLevels.indexOf(classRecord.level) === -1) {
       standardLevels.unshift(classRecord.level);
     }
