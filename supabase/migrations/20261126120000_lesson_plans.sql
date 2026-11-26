@@ -40,6 +40,10 @@ create index lesson_plans_status_created_idx
   on public.lesson_plans (status, created_at desc);
 create index lesson_plans_class_session_idx
   on public.lesson_plans (class_id, session_id, term_id);
+create index lesson_plans_subject_idx on public.lesson_plans (subject_id);
+create index lesson_plans_session_idx on public.lesson_plans (session_id);
+create index lesson_plans_term_idx on public.lesson_plans (term_id);
+create index lesson_plans_reviewed_by_idx on public.lesson_plans (reviewed_by);
 
 alter table public.lesson_plans enable row level security;
 
@@ -136,101 +140,109 @@ create trigger lesson_plans_updated_at
 before update on public.lesson_plans
 for each row execute function public.set_lesson_plan_updated_at();
 
-create policy "Admins can manage lesson plans"
-  on public.lesson_plans
-  for all
-  to authenticated
-  using (is_admin())
-  with check (is_admin());
-
-create policy "Staff can view their own lesson plans"
+create policy "Lesson plan access by role"
   on public.lesson_plans
   for select
   to authenticated
   using (
-    is_active_user()
-    and staff_id in (
-      select s.id from public.staff s
-       where s.profile_id = (select auth.uid())
-         and s.status = 'active'
+    (select is_admin())
+    or (
+      (select is_active_user())
+      and staff_id in (
+        select s.id from public.staff s
+         where s.profile_id = (select auth.uid())
+           and s.status = 'active'
+      )
     )
   );
 
-create policy "Staff can create assigned lesson plans"
+create policy "Lesson plan inserts by role"
   on public.lesson_plans
   for insert
   to authenticated
   with check (
-    is_active_user()
-    and status in ('draft', 'submitted')
-    and staff_id in (
-      select s.id from public.staff s
-       where s.profile_id = (select auth.uid())
-         and s.status = 'active'
-    )
-    and exists (
-      select 1
-        from public.teaching_assignments ta
-       where ta.staff_id = lesson_plans.staff_id
-         and ta.class_id = lesson_plans.class_id
-         and ta.session_id = lesson_plans.session_id
-         and ta.subject_id is not distinct from lesson_plans.subject_id
-    )
-    and exists (
-      select 1
-        from public.terms t
-       where t.id = lesson_plans.term_id
-         and t.session_id = lesson_plans.session_id
+    (select is_admin())
+    or (
+      (select is_active_user())
+      and status in ('draft', 'submitted')
+      and staff_id in (
+        select s.id from public.staff s
+         where s.profile_id = (select auth.uid())
+           and s.status = 'active'
+      )
+      and exists (
+        select 1
+          from public.teaching_assignments ta
+         where ta.staff_id = lesson_plans.staff_id
+           and ta.class_id = lesson_plans.class_id
+           and ta.session_id = lesson_plans.session_id
+           and ta.subject_id is not distinct from lesson_plans.subject_id
+      )
+      and exists (
+        select 1
+          from public.terms t
+         where t.id = lesson_plans.term_id
+           and t.session_id = lesson_plans.session_id
+      )
     )
   );
 
-create policy "Staff can update their own draft lesson plans"
+create policy "Lesson plan updates by role"
   on public.lesson_plans
   for update
   to authenticated
   using (
-    is_active_user()
-    and status in ('draft', 'revision_requested')
-    and staff_id in (
-      select s.id from public.staff s
-       where s.profile_id = (select auth.uid())
-         and s.status = 'active'
+    (select is_admin())
+    or (
+      (select is_active_user())
+      and status in ('draft', 'revision_requested')
+      and staff_id in (
+        select s.id from public.staff s
+         where s.profile_id = (select auth.uid())
+           and s.status = 'active'
+      )
     )
   )
   with check (
-    is_active_user()
-    and status in ('draft', 'submitted')
-    and staff_id in (
-      select s.id from public.staff s
-       where s.profile_id = (select auth.uid())
-         and s.status = 'active'
-    )
-    and exists (
-      select 1
-        from public.teaching_assignments ta
-       where ta.staff_id = lesson_plans.staff_id
-         and ta.class_id = lesson_plans.class_id
-         and ta.session_id = lesson_plans.session_id
-         and ta.subject_id is not distinct from lesson_plans.subject_id
-    )
-    and exists (
-      select 1
-        from public.terms t
-       where t.id = lesson_plans.term_id
-         and t.session_id = lesson_plans.session_id
+    (select is_admin())
+    or (
+      (select is_active_user())
+      and status in ('draft', 'submitted')
+      and staff_id in (
+        select s.id from public.staff s
+         where s.profile_id = (select auth.uid())
+           and s.status = 'active'
+      )
+      and exists (
+        select 1
+          from public.teaching_assignments ta
+         where ta.staff_id = lesson_plans.staff_id
+           and ta.class_id = lesson_plans.class_id
+           and ta.session_id = lesson_plans.session_id
+           and ta.subject_id is not distinct from lesson_plans.subject_id
+      )
+      and exists (
+        select 1
+          from public.terms t
+         where t.id = lesson_plans.term_id
+           and t.session_id = lesson_plans.session_id
+      )
     )
   );
 
-create policy "Staff can delete their own draft lesson plans"
+create policy "Lesson plan deletes by role"
   on public.lesson_plans
   for delete
   to authenticated
   using (
-    is_active_user()
-    and status = 'draft'
-    and staff_id in (
-      select s.id from public.staff s
-       where s.profile_id = (select auth.uid())
-         and s.status = 'active'
+    (select is_admin())
+    or (
+      (select is_active_user())
+      and status = 'draft'
+      and staff_id in (
+        select s.id from public.staff s
+         where s.profile_id = (select auth.uid())
+           and s.status = 'active'
+      )
     )
   );
