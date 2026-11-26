@@ -38,9 +38,9 @@
   function statusInfo(status) {
     var values = {
       draft: { label: "Draft", tone: "muted" },
-      submitted: { label: "Pending review", tone: "warn" },
+      submitted: { label: "Pending review", tone: "due" },
       approved: { label: "Approved", tone: "ok" },
-      revision_requested: { label: "Revision requested", tone: "alert" }
+      revision_requested: { label: "Revision requested", tone: "late" }
     };
     return values[status] || { label: "Unknown", tone: "muted" };
   }
