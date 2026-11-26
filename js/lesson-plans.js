@@ -38,7 +38,7 @@
   function statusInfo(status) {
     var values = {
       draft: { label: "Draft", tone: "muted" },
-      submitted: { label: "Pending review", tone: "due" },
+      submitted: { label: "Pending review", tone: "warn" },
       approved: { label: "Approved", tone: "ok" },
       revision_requested: { label: "Revision requested", tone: "alert" }
     };
@@ -257,7 +257,7 @@
       html += '<p class="notice notice--warn mt-1">The administrator must set the current academic session and term before lesson plans can be submitted.</p>';
     }
 
-    if (!panel.teachingOptions.length) {
+    if (!panel.teachingOptions.length && !panel.lessonPlans.length) {
       html += '<div class="empty-state"><h3>No teaching assignments</h3><p>You need an active class and subject assignment before creating a lesson plan.</p></div>';
       return html;
     }
