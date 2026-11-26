@@ -665,7 +665,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
           taught.forEach(function (item) {
             if (item.classes && !classIds.includes(item.classes.id)) {
               classIds.push(item.classes.id);
-              classOptions.push(item.classes);
+              classOptions.push(Object.assign({}, item.classes, { level: item.classes.level === "Basic" ? "Primary" : item.classes.level }));
             }
           });
 
@@ -685,7 +685,7 @@ return client.from("terms").select("id,name,session_id").eq("is_current", true).
             return [
               student.admission_no || "—",
               [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(" "),
-              classInfo ? classInfo.name + (classInfo.level ? " · " + classInfo.level : "") : "—",
+              classInfo ? classInfo.name + (classInfo.level ? " · " + (classInfo.level === "Basic" ? "Primary" : classInfo.level) : "") : "—",
               "Active"
             ];
           });
@@ -986,7 +986,7 @@ currentEnrolments.forEach(function (e) { enrolmentByStudent[e.student_id] = e; }
             .filter(function (name, index, all) { return name && all.indexOf(name) === index; });
         return [
           c.name || "—",
-          [c.level, c.arm].filter(Boolean).join(" ") || "—",
+          [(c.level === "Basic" ? "Primary" : c.level), c.arm].filter(Boolean).join(" ") || "—",
           teacherNames.join(", ") || "Not assigned",
           String(currentEnrolments.filter(function (e) { return e.class_id === c.id; }).length)
         ];

@@ -903,9 +903,10 @@ var PortalDashboard = {
     var staffList = (this.config.adminStaff || []).filter(function (item) { return item.status === "active"; });
     var students = (this.config.adminStudents || []).filter(function (item) { return item.status === "active"; });
     var subjects = this.config.adminSubjects || [];
-    var standardLevels = ["Basic"];
-    if (classRecord.level && standardLevels.indexOf(classRecord.level) === -1) {
-      standardLevels.unshift(classRecord.level);
+    var standardLevels = ["Nursery", "Primary", "Secondary"];
+    var selectedLevel = classRecord.level === "Basic" ? "Primary" : classRecord.level;
+    if (selectedLevel && standardLevels.indexOf(selectedLevel) === -1) {
+      standardLevels.unshift(selectedLevel);
     }
 
     var html = '<form id="portal-class-editor-form" class="form-stack" novalidate>' +
@@ -915,7 +916,7 @@ var PortalDashboard = {
       '<button type="button" class="btn btn--ghost btn--small" data-class-close>Close</button></div>' +
       '<label>Class name<input class="form-control" name="name" required maxlength="80" value="' + portalEscape(classRecord.name || "") + '"></label>' +
       '<label>School section<select class="form-control" name="level" required><option value="">Choose a school section…</option>' +
-      standardLevels.map(function (level) { return '<option value="' + portalEscape(level) + '"' + (classRecord.level === level ? " selected" : "") + '>' + portalEscape(level) + '</option>'; }).join("") +
+      standardLevels.map(function (level) { return '<option value="' + portalEscape(level) + '"' + (selectedLevel === level ? " selected" : "") + '>' + portalEscape(level) + '</option>'; }).join("") +
       '</select></label>' +
       '<label>Arm (optional)<input class="form-control" name="arm" maxlength="40" value="' + portalEscape(classRecord.arm || "") + '"></label>' +
       '<section class="class-editor-section"><h3>Existing students</h3><p class="muted">Tick every student who belongs to this class for the current academic session.</p>' +
