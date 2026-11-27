@@ -65,7 +65,6 @@
       '<div class="panel__head"><div><span class="eyebrow">Staff workspace</span><h2>' + (record ? "Edit lesson plan" : "Write lesson plan") + '</h2><p>' + esc(panel.termName || "") + '</p></div>' +
       '<button type="button" class="btn btn--ghost btn--small" data-emis-close>Close</button></div>' +
       '<div class="form-grid">' + field("Date","plan_date",planDate,"date",true) +
-      field("Plan title","title",record && record.title,"text",true) +
       field("No. in class","class_size",record && record.class_size,"number",false) +
       field("Average age","average_age",record && record.average_age,"number",false) +
       '</div><label class="emis-field">Class<select class="form-control" name="class_id" required>' + classOptions(panel,cls) + '</select></label>' +
@@ -104,7 +103,7 @@
         var payload = {
           class_id:d.get("class_id"), subject_id:d.get("subject_id")==="__general__"?null:d.get("subject_id"),
           session_id:panel.sessionId, term_id:panel.termId, plan_date:date, week_start:date, week_end:date,
-          title:String(d.get("title")||"").trim(), topic:String(d.get("topic")||"").trim(),
+          title:(String(d.get("topic")||"").trim() + " - " + date), topic:String(d.get("topic")||"").trim(),
           subtopic:String(d.get("subtopic")||"").trim(), class_size:d.get("class_size")?Number(d.get("class_size")):null,
           average_age:d.get("average_age")?Number(d.get("average_age")):null,
           time_from:from||null,time_to:to||null,duration:String(d.get("duration")||"").trim(),
@@ -130,7 +129,7 @@
     var dialog=document.getElementById("emis-note-upload");
     if(!dialog){dialog=document.createElement("dialog");dialog.id="emis-note-upload";dialog.className="portal-editor-dialog";document.body.appendChild(dialog);}
     var cls=panel.teachingOptions[0]&&panel.teachingOptions[0].class_id;
-    dialog.innerHTML='<form id="emis-note-form" class="form-stack"><div class="panel__head"><div><span class="eyebrow">Staff workspace</span><h2>Upload lesson note</h2><p>PDF only. File must be less than 1 MB.</p></div><button type="button" class="btn btn--ghost btn--small" data-note-close>Close</button></div>' +
+    dialog.innerHTML='<form id="emis-note-form" class="form-stack"><div class="panel__head"><div><span class="eyebrow">Staff workspace</span><h2>Upload lesson note</h2><p>PDF only. File must be less than 1 MB.</p></div><div class="notice notice--info"><strong>Upload instructions</strong><ul><li>Only lesson notes are allowed.</li><li>Prepare the note using Microsoft Word 2010 or later.</li><li>Organise and format the note clearly, then check it for errors.</li><li>Make sure it is comprehensive and easy to understand.</li><li>Save the finished note as a PDF before uploading.</li><li>Ensure the PDF is less than 1 MB.</li></ul></div><button type="button" class="btn btn--ghost btn--small" data-note-close>Close</button></div>' +
       '<label class="emis-field">Class<select class="form-control" name="class_id" required>'+classOptions(panel,cls)+'</select></label>' +
       '<label class="emis-field">Subject<select class="form-control" name="subject_id" required>'+subjectOptions(panel,cls,null)+'</select></label>' +
       field("Topic","topic","","text",true) +
