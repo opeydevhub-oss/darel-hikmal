@@ -1605,6 +1605,48 @@ function setUpSignInForm() {
       passwordField.closest(".form-field--disabled").classList.remove("form-field--disabled");
   }
 
+  // Add an accessible show/hide control so users can verify their password
+  // before submitting the shared school sign-in form.
+  if (passwordField && !form.querySelector("[data-password-visibility]")) {
+    var passwordWrap = document.createElement("div");
+    passwordWrap.style.position = "relative";
+    passwordWrap.style.display = "flex";
+    passwordWrap.style.alignItems = "center";
+    passwordWrap.style.width = "100%";
+    passwordField.parentNode.insertBefore(passwordWrap, passwordField);
+    passwordWrap.appendChild(passwordField);
+    passwordField.style.flex = "1";
+    passwordField.style.minWidth = "0";
+    passwordField.style.paddingRight = "4.5rem";
+
+    var visibilityButton = document.createElement("button");
+    visibilityButton.type = "button";
+    visibilityButton.setAttribute("data-password-visibility", "");
+    visibilityButton.setAttribute("aria-label", "Show password");
+    visibilityButton.setAttribute("aria-pressed", "false");
+    visibilityButton.textContent = "Show";
+    visibilityButton.style.position = "absolute";
+    visibilityButton.style.right = "0.65rem";
+    visibilityButton.style.top = "50%";
+    visibilityButton.style.transform = "translateY(-50%)";
+    visibilityButton.style.border = "0";
+    visibilityButton.style.background = "transparent";
+    visibilityButton.style.color = "#123066";
+    visibilityButton.style.fontWeight = "700";
+    visibilityButton.style.cursor = "pointer";
+    visibilityButton.style.padding = "0.45rem";
+    visibilityButton.style.borderRadius = "6px";
+    visibilityButton.addEventListener("click", function () {
+      var reveal = passwordField.type === "password";
+      passwordField.type = reveal ? "text" : "password";
+      visibilityButton.textContent = reveal ? "Hide" : "Show";
+      visibilityButton.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
+      visibilityButton.setAttribute("aria-pressed", reveal ? "true" : "false");
+      passwordField.focus();
+    });
+    passwordWrap.appendChild(visibilityButton);
+  }
+
   // The role picker is intentionally NOT consulted for authorization. It is
   // removed from the markup; sign-in is email + password for everyone and the
   // destination is chosen from the profile role by the server.
