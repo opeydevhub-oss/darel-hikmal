@@ -116,7 +116,7 @@
         return Promise.all([
           assignmentQuery,
           client.from("lesson_plans")
-            .select("id,class_id,subject_id,week_start,week_end,title,topic,subtopic,learning_objectives,previous_knowledge,instructional_materials,introduction,lesson_development,teacher_activities,learner_activities,evaluation,assignment,status,review_comment,created_at,class:classes(name,level),subject:subjects(name)")
+            .select("id,class_id,subject_id,week_start,week_end,plan_date,class_size,average_age,time_from,time_to,duration,lesson_stages,references_text,title,topic,subtopic,learning_objectives,previous_knowledge,instructional_materials,introduction,lesson_development,teacher_activities,learner_activities,evaluation,assignment,status,review_comment,created_at,class:classes(name,level),subject:subjects(name)")
             .eq("staff_id", staff.id)
             .order("created_at", { ascending: false })
         ]).then(function (data) {
