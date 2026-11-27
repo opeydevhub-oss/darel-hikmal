@@ -1605,43 +1605,28 @@ function setUpSignInForm() {
       passwordField.closest(".form-field--disabled").classList.remove("form-field--disabled");
   }
 
-  // Add an accessible show/hide control so users can verify their password
-  // before submitting the shared school sign-in form.
+  // Add a styled, accessible eye control to reveal or conceal the password.
   if (passwordField && !form.querySelector("[data-password-visibility]")) {
     var passwordWrap = document.createElement("div");
-    passwordWrap.style.position = "relative";
-    passwordWrap.style.display = "flex";
-    passwordWrap.style.alignItems = "center";
-    passwordWrap.style.width = "100%";
+    passwordWrap.className = "signin__password-wrap";
     passwordField.parentNode.insertBefore(passwordWrap, passwordField);
     passwordWrap.appendChild(passwordField);
-    passwordField.style.flex = "1";
-    passwordField.style.minWidth = "0";
-    passwordField.style.paddingRight = "4.5rem";
 
     var visibilityButton = document.createElement("button");
     visibilityButton.type = "button";
+    visibilityButton.className = "password-visibility";
     visibilityButton.setAttribute("data-password-visibility", "");
     visibilityButton.setAttribute("aria-label", "Show password");
     visibilityButton.setAttribute("aria-pressed", "false");
-    visibilityButton.textContent = "Show";
-    visibilityButton.style.position = "absolute";
-    visibilityButton.style.right = "0.65rem";
-    visibilityButton.style.top = "50%";
-    visibilityButton.style.transform = "translateY(-50%)";
-    visibilityButton.style.border = "0";
-    visibilityButton.style.background = "transparent";
-    visibilityButton.style.color = "#123066";
-    visibilityButton.style.fontWeight = "700";
-    visibilityButton.style.cursor = "pointer";
-    visibilityButton.style.padding = "0.45rem";
-    visibilityButton.style.borderRadius = "6px";
+    visibilityButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
     visibilityButton.addEventListener("click", function () {
       var reveal = passwordField.type === "password";
       passwordField.type = reveal ? "text" : "password";
-      visibilityButton.textContent = reveal ? "Hide" : "Show";
       visibilityButton.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
       visibilityButton.setAttribute("aria-pressed", reveal ? "true" : "false");
+      visibilityButton.innerHTML = reveal
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a15 15 0 0 1-3.1 3.8"></path><path d="M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.8 10.8 0 0 0 4-.8"></path></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
       passwordField.focus();
     });
     passwordWrap.appendChild(visibilityButton);
@@ -1657,7 +1642,7 @@ function setUpSignInForm() {
     var password = passwordField ? passwordField.value : "";
     var firstInvalid = null;
 
-    portalQueryAll(".form-row", form).forEach(function (row) {
+    portalQueryAll(".form-field", form).forEach(function (row) {
       row.classList.remove("has-error");
       var text = portalQuery(".form-field-error", row);
       if (text) { text.textContent = ""; }
@@ -1665,7 +1650,7 @@ function setUpSignInForm() {
 
     if (!email) {
       if (emailField) {
-        emailField.closest(".form-row").classList.add("has-error");
+        emailField.closest(".form-field").classList.add("has-error");
         portalQuery(".form-field-error", emailField.closest(".form-row")).textContent = "Enter your email address or student number to continue.";
         firstInvalid = emailField;
       }
@@ -1673,7 +1658,7 @@ function setUpSignInForm() {
 
     if (!password) {
       if (passwordField) {
-        passwordField.closest(".form-row").classList.add("has-error");
+        passwordField.closest(".form-field").classList.add("has-error");
         portalQuery(".form-field-error", passwordField.closest(".form-row")).textContent = "Enter your password to continue.";
         firstInvalid = passwordField;
       }
